@@ -10,10 +10,15 @@
 #define __PuzzleSolver__puzzle__
 
 #include <iostream>
-#include "edge.h"
-#include "piece.h"
 #include <string>
-#include "utils.h"
+#include <vector>
+
+#include "opencv2/core/mat.hpp"
+
+#include "edge.h"
+#include "params.h"
+#include "piece.h"
+
 
 class puzzle{
 private:
@@ -24,21 +29,20 @@ private:
             return a.score<b.score;
         }
     };
-    int threshold;
+    params& user_params;
     bool solved;
     std::vector<match_score> matches;
-    std::vector<piece> extract_pieces(std::string path, bool needs_filter);
+    std::vector<piece> extract_pieces();
     std::vector<piece>  pieces;
     cv::Mat_<int> solution;
     void print_edges();
     cv::Mat_<int> solution_rotations;
     void fill_costs();
-    int piece_size;
     std::string edgeType_to_s(edgeType e);
 public:
-    puzzle(std::string path,int estimated_piece_size, int threshold, bool filter = true);
+    puzzle(params& userParams);
     void solve();
-    void save_image(std::string filepath);
+    void save_image();
 };
 
 

@@ -8,6 +8,8 @@
 
 #include "utils.h"
 
+#include "opencv2/imgcodecs.hpp"
+#include "opencv2/imgproc.hpp"
 
 
 
@@ -100,8 +102,8 @@ std::vector<cv::Point> remove_duplicates(std::vector<cv::Point> vec){
     while(dupes_found){
         dupes_found=false;
         int dup_at=-1;
-        for(int i =0; i<vec.size(); i++){
-            for(int j=0; j<vec.size(); j++){
+        for(uint i =0; i<vec.size(); i++){
+            for(uint j=0; j<vec.size(); j++){
                 if(j==i) continue;
                 //                std::cout << vec[i] << " " << vec[j] << std::endl;
                 if(vec[i] == vec[j]){
@@ -119,4 +121,27 @@ std::vector<cv::Point> remove_duplicates(std::vector<cv::Point> vec){
     return vec;
 }
 
+void write_img(params& user_params, cv::Mat& img, std::string filename) {
+    if (user_params.isVerbose()) {
+        std::cout << "Writing " << filename << std::endl;
+    }
+    cv::imwrite(filename, img);
+}
 
+void write_debug_img(params& user_params, cv::Mat& img, std::string prefix, std::string index) {
+    std::stringstream file_name;
+    file_name << user_params.getDebugDir() << prefix << "-" << index << ".png";
+    write_img(user_params, img, file_name.str());
+}
+
+void write_debug_img(params& user_params, cv::Mat& img, std::string prefix, std::string index1, std::string index2) {
+    write_debug_img(user_params, img, prefix, index1 + "-" + index2);
+}
+
+void write_debug_img(params& user_params, cv::Mat& img, std::string prefix, uint index) {
+    write_debug_img(user_params, img, prefix, std::to_string(index));
+}
+
+void write_debug_img(params& user_params, cv::Mat& img, std::string prefix, uint index1, uint index2) {
+    write_debug_img(user_params, img, prefix, std::to_string(index1), std::to_string(index2));
+}

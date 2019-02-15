@@ -18,9 +18,9 @@
 #include <sstream>
 #include <dirent.h>
 #include <vector>
-#include "opencv/cv.h"
-#include "opencv/highgui.h"
-#include "piece.h"
+#include "opencv2/core/mat.hpp"
+#include "opencv2/core/types.hpp"
+#include "params.h"
 typedef std::vector<cv::Mat> imlist;
 
 
@@ -39,12 +39,18 @@ template<class T>
 std::vector<cv::Point> translate_contour(std::vector<T> in , int offset_x, int offset_y){
     std::vector<cv::Point> ret_contour;
     cv::Point2f offset(offset_x,offset_y);
-    for(int i = 0; i<in.size(); i++){
+    for(uint i = 0; i<in.size(); i++){
         int x = (int)(in[i].x+offset_x+0.5);
         int y = (int)(in[i].y+offset_y+0.5);
         ret_contour.push_back(T(x,y));
     }
     return ret_contour;
 }
+
+void write_img(params& user_params, cv::Mat& img, std::string filename);
+void write_debug_img(params& user_params, cv::Mat& img, std::string prefix, std::string index);
+void write_debug_img(params& user_params, cv::Mat& img, std::string prefix, std::string index1, std::string index2);
+void write_debug_img(params& user_params, cv::Mat& img, std::string prefix, uint index);
+void write_debug_img(params& user_params, cv::Mat& img, std::string prefix, uint index1, uint index2);
 
 #endif /* defined(__PuzzleSolver__Utils__) */

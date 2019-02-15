@@ -7,12 +7,16 @@
 //
 
 #include "piece.h"
+
 #include <cassert>
 #include <algorithm>
+
+#include "opencv2/imgproc.hpp"
+#include "opencv2/imgcodecs.hpp"
+
 #include "edge.h"
 #include "utils.h"
 
-int number = 0;
 
 //This function takes in the beginning and ending of one vector, and returns
 //an iterator representing the point where the first item in the second vector is.
@@ -44,11 +48,11 @@ double distance(cv::Point a, cv::Point b){
 }
 
 
-piece::piece(cv::Mat color, cv::Mat black_and_white, int estimated_piece_size){
+piece::piece(std::string id, cv::Mat color, cv::Mat black_and_white, params& _user_params) : user_params(_user_params) {
+    this->id = id;
 //    edges = std::vector<edge>();
-    full_color = color;
-    bw = black_and_white;
-    piece_size = estimated_piece_size;
+    this->full_color = color;
+    this->bw = black_and_white;
     process();
 }
 
@@ -69,9 +73,9 @@ void piece::find_corners(){
     
     
     //How close can 2 corners be?
-    double minDistance = piece_size;
+    double minDistance = user_params.getEstimatedPieceSize();
     //How big of an area to look for the corner in.
-    int blockSize = 25;
+    int blockSize = 12;
     bool useHarrisDetector = true;
     double k = 0.04;
     
@@ -119,13 +123,17 @@ void piece::find_corners(){
     cv::cornerSubPix( bw, corners, winSize, zeroZone, criteria );
     
 
-    //More debug stuff, this will mark the corners with a white circle and save the image
-    //    int r = 4;
-//    for( int i = 0; i < corners.size(); i++ )
-//    { circle( full_color, corners[i],(int) corners.size(), cv::Scalar(255,255,255), -1, 8, 0 ); }
-//    std::stringstream out_file_name;
-//    out_file_name << "/tmp/final/test"<<number++<<".png";
-//    cv::imwrite(out_file_name.str(), full_color);
+    //More debug stuff, this will mark the corners with a red circle and save the image
+
+    if (user_params.isSavingDebugOutput()) {
+		cv::Mat corners_img = full_color.clone();
+		for(uint i = 0; i < corners.size(); i++ ) {
+			circle( corners_img, corners[i],(int) corners.size(), cv::Scalar(0,0,255), -1, 8, 0 );
+		}
+		std::stringstream out_file_name;
+		out_file_name << user_params.getDebugDir() << "corners_" << id << ".png";
+		cv::imwrite(out_file_name.str(), corners_img);
+    }
 
     
     if(found_all_corners){
@@ -156,10 +164,10 @@ void piece::extract_edges(){
 
     //out of all of the found corners, find the closest points in the contour,
     //these will become the endpoints of the edges
-    for(int i = 0; i<corners.size(); i++){
+    for(uint i = 0; i<corners.size(); i++){
         double best = 10000000000;
         cv::Point2f closest_point = contour[0];
-        for(int j = 0; j<contour.size(); j++){
+        for(uint j = 0; j<contour.size(); j++){
             double d = distance(corners[i],contour[j]);
             if(d<best){
                 best = d;

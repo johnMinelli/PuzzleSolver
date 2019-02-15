@@ -9,12 +9,13 @@
 #ifndef __PuzzleSolver__piece__
 #define __PuzzleSolver__piece__
 #include <iostream>
-#include "opencv/cv.h"
-#include "opencv/highgui.h"
+
+#include <vector>
+#include "opencv2/core/mat.hpp"
+#include "opencv2/core/types.hpp"
+
 #include "edge.h"
-typedef std::vector<cv::Mat> imlist;
-
-
+#include "params.h"
 
 enum pieceType {CORNER, FRAME, MIDDLE};
 
@@ -27,18 +28,19 @@ enum pieceType {CORNER, FRAME, MIDDLE};
 
 class piece{
 private:
+    std::string id;
     std::vector<cv::Point2f> corners;
     pieceType type;
     void process();
     void find_corners();
     void extract_edges();
     void classify();
-    int piece_size;
+    params& user_params;
 public:
     cv::Mat full_color;
     cv::Mat bw;
 
-    piece(cv::Mat color,cv::Mat bw, int piece_size);
+    piece(std::string id, cv::Mat color, cv::Mat bw, params& user_params);
     edge edges[4];
     pieceType get_type();
     cv::Point2f get_corner(int id);

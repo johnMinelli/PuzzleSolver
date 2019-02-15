@@ -10,7 +10,9 @@
 #define __PuzzleSolver__PuzzleDisjointSet__
 
 #include <iostream>
-#include <opencv/cv.h>
+#include <vector>
+#include "opencv2/core/mat.hpp"
+#include "opencv2/core/types.hpp"
 
 class PuzzleDisjointSet{
 public:

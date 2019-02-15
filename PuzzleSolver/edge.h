@@ -10,7 +10,7 @@
 #define __PuzzleSolver__edge__
 
 #include <iostream>
-#include <opencv/cv.h>
+#include "opencv2/core/types.hpp"
 
 
 enum edgeType { OUTER_EDGE, TAB, HOLE };

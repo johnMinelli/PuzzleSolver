@@ -6,10 +6,16 @@
 //  Copyright (c) 2013 Joe Zeimen. All rights reserved.
 //
 
+
+
 #include "edge.h"
+
 #include <vector>
 #include <cmath>
+#include "opencv2/imgproc.hpp"
+
 #include "utils.h"
+
 edge::edge(std::vector<cv::Point> edge){
     //original
     contour = edge;
@@ -72,7 +78,7 @@ void edge::classify(){
     //the classification on that
     int minx  = 100000000;
     int maxx = -100000000;
-    for(int i = 0; i<normalized_contour.size(); i++){
+    for(uint i = 0; i<normalized_contour.size(); i++){
         if(minx > normalized_contour[i].x)  minx = normalized_contour[i].x;
         if(maxx < normalized_contour[i].x)  maxx = normalized_contour[i].x;
     }
@@ -127,6 +133,7 @@ std::vector<cv::Point2f> edge::normalize(std::vector<T> cont){
 
 //TODO: get rid of this default constructor so it isn't accedentally used.
 edge::edge(){
+	type = OUTER_EDGE;
 }
 
 edgeType edge::get_type(){

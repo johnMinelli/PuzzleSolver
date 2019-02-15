@@ -4,42 +4,38 @@ PuzzleSolver
 This is a program that uses computer vision techniques to solve jigsaw puzzles using the shapes of the edges.
 
 
-# Compiling opencv and run
+# Installing OpenCV
 
-I am specifically using the 2.4.4 version of the opencv library. Here is how I have done it on 2 different computers. This is required to run PuzzleSolver. 
+OpenCV is required to run PuzzleSolver. This version compiles with OpenCV 3.x. Here is how I have done it on 2 different computers. 
 
-## OSX
+## OSX (tested on High Sierra)
 
-    cd ~
-    git clone git://code.opencv.org/opencv.git
-    cd opencv
-    git checkout 2.4.5
-    mkdir build
-    cd build
-    cmake -G "Unix Makefiles" -D CMAKE_OSX_ARCHITECTURES=x86_64 ..
-    make -j8
-    sudo make install
+```
+    # Install Homebrew if you haven't already. Visit https://brew.sh and install it
 
-#### Mavericks?
-See https://github.com/jzeimen/PuzzleSolver/issues/2
+    # Install opencv
+    brew install opencv libomp
+```
 
-## Linux (Tested on Ubuntu 12.04)
+## Linux (tested on Ubuntu 18.04)
 
-    cd ~
-    git clone git://code.opencv.org/opencv.git
-    cd opencv
-    git checkout 2.4.5
-    mkdir build
-    cd build
-    cmake -G "Unix Makefiles" ..
-    make -j8
-    sudo make install
 
+### Via apt-get (installs OpenCV 3.2 as of Jan 2019)
+
+```
+sudo apt-get install libopencv-dev
+```
+
+### Manual install
+
+https://www.pyimagesearch.com/2018/05/28/ubuntu-18-04-how-to-install-opencv/
 
 # Compiling PuzzleSolver
 
-Once the opencv library has been installed, you can try to open the xcodeproject, or on linux or mac run this from the PuzzleSolver directory (with the source files):
+Once OpenCV has been installed, you can try to open the xcodeproject, or on linux or mac run this from the PuzzleSolver directory (with the source files):
 
-    g++ -O3 `pkg-config --cflags opencv` -o PuzzleSolver *.cpp `pkg-config --libs opencv`
+```
+g++ -O3 `pkg-config --cflags opencv` -std=c++11 -o PuzzleSolver *.cpp `pkg-config --libs opencv`
+```
 
-This will result in an executable called PuzzleSolver. Currently the input/output settings are just hard coded in the program. 
+This will result in an executable called PuzzleSolver.  Run it without any command line arguments and the usage information will be displayed.
