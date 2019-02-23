@@ -25,6 +25,7 @@ public:
 private:
     //A count of how many sets are left.
     int set_count;
+    uint merge_failures;
     std::vector<forest> sets;
     void rotate_ccw(int id, int times);
     void make_set(int x);
@@ -36,9 +37,7 @@ public:
     bool in_same_set(int a, int b);
     bool in_one_set();
     forest get(int id);
-    
-
-
+    void finish();    
 };
 
 

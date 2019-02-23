@@ -26,23 +26,25 @@
 int main(int argc, char * argv[])
 {
     
-	cxxopts::Options options("PuzzleSolver", "Solve jigsaw puzzles using the shapes of the piece edges");
+    cxxopts::Options options("PuzzleSolver", "Solve jigsaw puzzles using the shapes of the piece edges");
 
-	options.add_options()
-          ("v,verbose", "Verbose output", cxxopts::value<bool>()->default_value("false"))
-	  ("h,help", "Display this help message")
-	  ("s,size", "Estimated piece size", cxxopts::value<int>()->default_value("200"))
-	  ("t,threshold", "Threshold", cxxopts::value<int>()->default_value("30"))
-	  ("f,filter", "Use filter() instead of median_filter()", cxxopts::value<bool>()->default_value("false"))
-	  ("d,debug-dir", "Save intermediate output files to this directory", cxxopts::value<std::string>())
-	  ("l,landscape", "Input images are in landscape orientation", cxxopts::value<bool>()->default_value("false"))                
-          ("p,partition", "Piece partition factor", cxxopts::value<float>()->default_value("1.0"))                
-	  ("positional","Positional parameters", cxxopts::value<std::vector<std::string>>())
-	  ;
+    options.add_options()
+      ("v,verbose", "Verbose output", cxxopts::value<bool>()->default_value("false"))
+      ("h,help", "Display this help message")
+      ("s,size", "Estimated piece size", cxxopts::value<int>()->default_value("200"))
+      ("t,threshold", "Threshold", cxxopts::value<int>()->default_value("30"))
+      ("i,image", "Solution image filename", cxxopts::value<std::string>()->default_value("solution.png"))      
+      ("f,filter", "Use filter() instead of median_filter()", cxxopts::value<bool>()->default_value("false"))
+      ("d,debug", "Output intermediate images", cxxopts::value<bool>()->default_value("false"))
+      ("l,landscape", "Input images are in landscape orientation", cxxopts::value<bool>()->default_value("false"))                
+      ("p,partition", "Piece partition factor", cxxopts::value<float>()->default_value("1.0"))                
+      ("c,corners", "Minimum corner quality", cxxopts::value<int>()->default_value("250"))                                                               
+      ("positional","Positional parameters", cxxopts::value<std::vector<std::string>>())
+      ;
 
-	options.parse_positional({"positional"});
-	options.positional_help("<input images directory> <output image name>");
-	auto result = options.parse(argc, argv);
+    options.parse_positional({"positional"});
+    options.positional_help("<input images directory> <output dir>");
+    auto result = options.parse(argc, argv);
 
     if (result.count("help"))
     {
@@ -59,23 +61,23 @@ int main(int argc, char * argv[])
 
     auto& positional = result["positional"].as<std::vector<std::string>>();
 
-    params user_params(
-            result["verbose"].as<bool>(),
-            positional[0],
-            positional[1],
-            result.count("debug-dir") ? result["debug-dir"].as<std::string>() : std::string(""),
-            result["size"].as<int>(),
-            result["threshold"].as<int>(),
-            !result["filter"].as<bool>(),
-            result["landscape"].as<bool>(),
-            result["partition"].as<float>()
-    );
-
+    params user_params;
+    
+    user_params.setVerbose(result["verbose"].as<bool>());
+    user_params.setInputDir(positional[0]);
+    user_params.setOutputDir(positional[1]);
+    user_params.setSolutionImageFilename(result["image"].as<std::string>());
+    user_params.setGeneratingDebugOutput(result["debug"].as<bool>());
+    user_params.setEstimatedPieceSize(result["size"].as<int>());
+    user_params.setThreshold(result["threshold"].as<int>());
+    user_params.setUsingMedianFilter(!result["filter"].as<bool>());
+    user_params.setUsingLandscape(result["landscape"].as<bool>());
+    user_params.setPartitionFactor(result["partition"].as<float>());
+    user_params.setMinCornersQuality(result["corners"].as<int>());   
     user_params.show();
 
-    if (user_params.isSavingDebugOutput()) {
-    	mkdir(user_params.getDebugDir().c_str(), 0775);
-    }
+    mkdir(user_params.getOutputDir().c_str(), 0775);
+
 
     std::cout << "Starting..." << std::endl;
     timeval time;

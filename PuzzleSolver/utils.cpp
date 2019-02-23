@@ -6,12 +6,17 @@
 //  Copyright (c) 2013 Joe Zeimen. All rights reserved.
 //
 
+#include <math.h>
 #include "utils.h"
 
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/imgproc.hpp"
 
 
+
+void line(cv::Mat mat, std::vector<cv::Point> points, int index1, int index2, cv::Scalar color) {
+    cv::line(mat, points[wrap_index(points, index1)], points[wrap_index(points, index2)], color);
+}
 
 //This function takes a directory, and returns a vector of every image opencv could extract from it.
 imlist getImages(std::string path){
@@ -130,7 +135,7 @@ void write_img(params& user_params, cv::Mat& img, std::string filename) {
 
 void write_debug_img(params& user_params, cv::Mat& img, std::string prefix, std::string index) {
     std::stringstream file_name;
-    file_name << user_params.getDebugDir() << prefix << "-" << index << ".png";
+    file_name << user_params.getOutputDir() << prefix << "-" << index << ".png";
     write_img(user_params, img, file_name.str());
 }
 
@@ -145,3 +150,5 @@ void write_debug_img(params& user_params, cv::Mat& img, std::string prefix, uint
 void write_debug_img(params& user_params, cv::Mat& img, std::string prefix, uint index1, uint index2) {
     write_debug_img(user_params, img, prefix, std::to_string(index1), std::to_string(index2));
 }
+
+

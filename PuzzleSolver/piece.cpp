@@ -42,11 +42,6 @@ std::vector<std::vector<cv::Point>::iterator> find_all_in(std::vector<cv::Point>
 }
 
 
-//Euclidian distance between 2 points.
-double distance(cv::Point a, cv::Point b){
-    return cv::norm(a-b);
-}
-
 
 piece::piece(std::string id, cv::Mat color, cv::Mat black_and_white, params& _user_params) : user_params(_user_params) {
     this->id = id;
@@ -113,7 +108,6 @@ void piece::find_corners(){
     
     
     
-    
     //Find the sub-pixel locations of the corners.
     cv::Size winSize = cv::Size( blockSize, blockSize );
     cv::Size zeroZone = cv::Size( -1, -1 );
@@ -125,23 +119,26 @@ void piece::find_corners(){
 
     //More debug stuff, this will mark the corners with a red circle and save the image
 
-    if (user_params.isSavingDebugOutput()) {
-		cv::Mat corners_img = full_color.clone();
-		for(uint i = 0; i < corners.size(); i++ ) {
-			circle( corners_img, corners[i],(int) corners.size(), cv::Scalar(0,0,255), -1, 8, 0 );
-		}
-		std::stringstream out_file_name;
-		out_file_name << user_params.getDebugDir() << "corners_" << id << ".png";
-		cv::imwrite(out_file_name.str(), corners_img);
+    if (user_params.isGeneratingDebugOutput()) {
+        cv::Mat corners_img = full_color.clone();
+        for(uint i = 0; i < corners.size(); i++ ) {
+            circle( corners_img, corners[i],(int) corners.size(), cv::Scalar(0,0,255), -1, 8, 0 );
+            putText(corners_img, std::to_string(i), corners[i] + cv::Point2f(10.0,10.0),
+                                    cv::FONT_HERSHEY_COMPLEX_SMALL, 1, cvScalar(0, 175, 175), 1, CV_AA);
+        }
+        std::stringstream out_file_name;
+        out_file_name << user_params.getOutputDir() << "corners_" << id << ".png";
+        cv::imwrite(out_file_name.str(), corners_img);
     }
-
     
-    if(found_all_corners){
-    } else {
-        std::cerr << "Failed to find correct number of corners " << corners.size()<< std::endl;
+    double cornersQuality = compute_corners_quality<float>(corners);
+    if (user_params.getMinCornersQuality() < cornersQuality) {
+        std::cerr << "Warning: poor corners for piece " << id << ", quality: " << cornersQuality << std::endl;
+    }
+    if (!found_all_corners) {
+        std::cerr << "Only found " << corners.size() << " corners for piece " << id << std::endl;
         exit(2);
     }
-    
 }
 
 
@@ -155,7 +152,7 @@ void piece::extract_edges(){
     cv::findContours(bw.clone(), contours, hierarchy, cv::RETR_LIST, cv::CHAIN_APPROX_NONE);
     assert(corners.size() == 4);
     if( 1 != contours.size() ){
-        std::cerr << "Found incorrect number of contours." << std::endl;
+        std::cerr << "Found incorrect number of contours (" << contours.size() << ") for piece" << id << std::endl;
         exit(3);
     }
     std::vector<cv::Point> contour = contours[0];
@@ -168,7 +165,7 @@ void piece::extract_edges(){
         double best = 10000000000;
         cv::Point2f closest_point = contour[0];
         for(uint j = 0; j<contour.size(); j++){
-            double d = distance(corners[i],contour[j]);
+            double d = distance<int>(corners[i],contour[j]);
             if(d<best){
                 best = d;
                 closest_point = contour[j];
@@ -227,7 +224,7 @@ void piece::classify(){
     } else if (count == 2){
         type = CORNER;
     } else {
-        std::cerr << "Proble, found too many outer edges for this piece" << std:: endl;
+        std::cerr << "Problem, found too many outer edges for piece" << id << std:: endl;
         exit(4);
     }
 }

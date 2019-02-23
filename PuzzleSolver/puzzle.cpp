@@ -20,6 +20,7 @@
 
 #include "PuzzleDisjointSet.h"
 #include "utils.h"
+#include "contours.h"
 
 typedef std::vector<cv::Mat> imlist;
 
@@ -41,7 +42,7 @@ puzzle::puzzle(params& _user_params) : user_params(_user_params) {
     std::cout << "extracting pieces" << std::endl;
     pieces = extract_pieces();
     solved = false;
-    if (user_params.isSavingDebugOutput()) {
+    if (user_params.isGeneratingDebugOutput()) {
     	print_edges();
     }
 }
@@ -69,124 +70,16 @@ void puzzle::print_edges(){
     }
 }
 
-// Associate piece contour points and bounds so they can be sorted
-class contour {
+// value at index
+template <class T>
+class vai {
 public:
-    cv::Rect bounds;
-    std::vector<cv::Point> points;
-    contour(cv::Rect _bounds, std::vector<cv::Point> _points) : bounds(_bounds), points(_points) {}
-    int sort_factor;
+    int index;
+    T value;
+    vai(int _index, T _value) : index(_index), value(_value) {}
 };
 
-// Contour partitions separate the piece contours in an image into rows (or columns) so that
-// we can sort the contours into the proper order.
-class contour_partition {
-public:
-    int index; // The unsorted partition index
-    int offset; // The offset in x (or y), used to order partition
-    int order; // Order of the partition among other partitions after sorting by offset
-    
-    contour_partition(int index) {
-        this->index = index;
-        offset = INT_MAX;
-    }
-    
-    void update_offset(int off) {
-        offset = std::min(offset, off);
-    }
-};
-
-// Contour manager 
-class contour_mgr {
-public:
-    int container_width;
-    int container_height;
-    params& user_params;
-    std::vector<contour> contours;
-    
-    
-    void add_contour(cv::Rect _bounds, std::vector<cv::Point> _points) {
-        contours.push_back(contour(_bounds, _points));
-    }
-    
-    contour_mgr(int _container_width, int _container_height, params& _user_params) : user_params(_user_params) {
-        container_width = _container_width;
-        container_height = _container_height;
-    }
-    
-    // Sort the contours so that the pieces end up being identified based on their position in the original image --
-    // i.e., assuming the pieces are arranged in a grid in the image, then number them left to right going
-    // from the top to the bottom.  The point of doing this is to provide some way to correlate hand-written piece
-    // numbers with the numerical (text) output of this program and is especially helpful if a solution is found
-    // but a final solution image can't be generated. The piece layout in the image does not need to be exact, 
-    // but the differences in y of each row (or x of each column) must be less than the estimated piece size multiplied 
-    // by the partition factor.  If "landscape" is true, then pieces are ordered top to bottom going left to right.
-    void sort_contours() {
-        // First, partition the contours based on x (or y) position.
-        std::vector<int> labels;
-        
-        // partition the contours into rows (or columns if landscape==true)
-        cv::partition(contours, labels, [=](const contour& a, const contour& b) {
-            int diff = user_params.isUsingLandscape() ? (a.bounds.x - b.bounds.x) : (a.bounds.y - b.bounds.y);
-            return std::abs(diff) < user_params.getEstimatedPieceSize() * user_params.getPartitionFactor();
-        });
-        
-        // Determine the number of partitions
-        int num_partitions = 0;
-        for (uint i = 0; i < labels.size(); i++) {
-            num_partitions = std::max(labels[i], num_partitions);
-        }
-        num_partitions += 1;
-        
-        // Create an array of partition objects
-        contour_partition* partition_array[num_partitions];
-        // Create a sortable vector of partitions
-        std::vector<contour_partition*> partition_vector;
-        for (uint i = 0; i < num_partitions; i++) {
-            partition_array[i] = new contour_partition(i);
-            partition_vector.push_back(partition_array[i]);
-        }
-        
-        // Determine the min offset (x or y) for each partition
-        for (uint i = 0; i < contours.size(); i++) {
-            int partition = labels[i];
-            int current_offset = partition_array[partition]->offset;
-            int extent = user_params.isUsingLandscape() ? contours[i].bounds.x : contours[i].bounds.y;
-            partition_array[partition]->offset = std::min(extent, current_offset);
-        }
-        
-        // Sort the partitions into offset order
-        std::sort(partition_vector.begin(), partition_vector.end(), [](contour_partition* a, contour_partition* b) {
-            return (a->offset) < (b-> offset);
-        });
-                
-        // Assign the partition order attribute based on the sorted order
-        for (uint i = 0 ; i < partition_vector.size(); i++) {
-            partition_vector[i]->order = i;
-        }
-        
-        int container_dimension = user_params.isUsingLandscape() ? container_height : container_width;
-        // Assign the sort_factor to each contour
-        for (uint i = 0; i < contours.size(); i++) {
-            
-            int contour_bounds_position = user_params.isUsingLandscape() ? contours[i].bounds.y : contours[i].bounds.x;
-            contours[i].sort_factor = partition_array[labels[i]]->order * container_dimension + contour_bounds_position;
-        }
-        
-        // Sort the contours
-        std::sort(contours.begin(), contours.end(),
-            [](const contour & a, const contour & b) -> bool
-        {
-            return a.sort_factor < b.sort_factor;
-        });        
-    }
-    
-};
-
-
-
-
-std::vector<piece> puzzle::extract_pieces(){
+std::vector<piece> puzzle::extract_pieces() {
     std::vector<piece> pieces;
     imlist color_images = getImages(user_params.getInputDir());
 
@@ -209,7 +102,7 @@ std::vector<piece> puzzle::extract_pieces(){
     //For each input image
     for(uint i = 0; i<color_images.size(); i++){
 
-        if (user_params.isSavingDebugOutput()) {
+        if (user_params.isGeneratingDebugOutput()) {
             write_debug_img(user_params, bw[i],"bw", i);
             write_debug_img(user_params, color_images[i], "color", i);
         }
@@ -224,18 +117,18 @@ std::vector<piece> puzzle::extract_pieces(){
         cv::findContours(bw[i].clone(), found_contours, hierarchy, cv::RETR_LIST, cv::CHAIN_APPROX_NONE);
 
         
-
+ 
         //For each contour in that image
         //TODO: (In anticipation of the other TODO's Re-create the b/w image
         //    based off of the contour to eliminate noise in the layer mask
 
-        contour_mgr contour_mgr(bw[i].size().width, bw[i].size().height, user_params);
+        contour_mgr contour_mgr(bw[i].size().width, bw[i].size().height, user_params); 
 
         for(uint j = 0; j < found_contours.size(); j++) {
             cv::Rect bounds =  cv::boundingRect(found_contours[j]);
             if(bounds.width < user_params.getEstimatedPieceSize() || bounds.height < user_params.getEstimatedPieceSize()) continue;
-
-            contour_mgr.add_contour(bounds, found_contours[j]);
+            
+            contour_mgr.add_contour(bounds, remove_duplicates(found_contours[j]));
         }
 
         contour_mgr.sort_contours();
@@ -259,7 +152,7 @@ std::vector<piece> puzzle::extract_pieces(){
             contours_to_draw.push_back(translate_contour(points, bordersize-bounds.x, bordersize-bounds.y));
             cv::drawContours(new_bw, contours_to_draw, -1, cv::Scalar(255), CV_FILLED);
 
-            if (user_params.isSavingDebugOutput()) {
+            if (user_params.isGeneratingDebugOutput()) {
                 write_debug_img(user_params, new_bw, "contour", piece_id);
             }
 
@@ -347,6 +240,8 @@ void puzzle::solve(){
         p.join_sets(p1, p2, e1, e2);
         i++;
     }
+    
+    p.finish();
     
     if(p.in_one_set()){
         std::cout << "Possible solution found" << std::endl;
@@ -451,7 +346,7 @@ void puzzle::save_image(){
         std::cout << "Failed, only partial image generated" << std::endl;
     }
 
-    cv::imwrite(user_params.getOutputFile(),final_out_image);
+    cv::imwrite(user_params.getOutputDir() + user_params.getSolutionImageFilename(),final_out_image);
     
     
 

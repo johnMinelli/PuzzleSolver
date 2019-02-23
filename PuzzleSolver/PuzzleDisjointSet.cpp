@@ -9,10 +9,12 @@
 #include "PuzzleDisjointSet.h"
 
 #include <algorithm>
+#include <ostream>
 #include "opencv2/core.hpp"
 
 PuzzleDisjointSet::PuzzleDisjointSet(int number){
     set_count=0;
+    merge_failures = 0;
     for(int i=0; i<number; i++){
         make_set(i);
     }
@@ -84,13 +86,12 @@ bool PuzzleDisjointSet::join_sets(int a, int b, int how_a, int how_b){
 
 
 
-
     //check for overlap while combining...
     for(int i = 0; i<new_a_locs.size[0]; i++){
         for(int j=0; j<new_a_locs.size[1]; j++){
             //If both have a real value for a piece, it becomes impossible, reject
             if(new_a_locs(i,j) != -1 && new_b_locs(i,j)!= -1){
-                std::cout << "Failed to merge because of overlap" << std::endl;
+                std::cout << "Failed to merge because of overlap (x" << ++merge_failures << ")\r" << std::flush;
                 return false;
             }
             
@@ -113,6 +114,12 @@ bool PuzzleDisjointSet::join_sets(int a, int b, int how_a, int how_b){
     //Representative is the same idea as a disjoint set datastructure
     sets[rep_b].representative = rep_a;
     return true; //Everything seems ok if it got this far
+}
+
+void PuzzleDisjointSet::finish() {
+    if (merge_failures > 0) {
+        std::cout << std::endl;
+    }
 }
 int PuzzleDisjointSet::find(int a){
     int rep = a;
