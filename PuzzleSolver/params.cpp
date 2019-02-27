@@ -20,12 +20,49 @@ void params::setEstimatedPieceSize(int estimatedPieceSize) {
     this->estimatedPieceSize = estimatedPieceSize;
 }
 
-bool params::isGeneratingDebugOutput() const {
-    return generatingDebugOutput;
+void params::setSaveAll(bool saveAll)
+{
+    this->saveAll = saveAll;
 }
 
-void params::setGeneratingDebugOutput(bool generatingDebugOutput) {
-    this->generatingDebugOutput = generatingDebugOutput;
+bool params::isSavingBlackWhite() const {
+    return savingBlackWhite || saveAll;
+}
+
+void params::setSavingBlackWhite(bool savingBlackWhite) {
+    this->savingBlackWhite = savingBlackWhite;
+}
+
+bool params::isSavingColor() const {
+    return savingColor || saveAll;
+}
+
+void params::setSavingColor(bool savingColor) {
+    this->savingColor = savingColor;
+}
+
+bool params::isSavingContours() const {
+    return savingContours || saveAll;
+}
+
+void params::setSavingContours(bool savingContours) {
+    this->savingContours = savingContours;
+}
+
+bool params::isSavingCorners() const {
+    return savingCorners || saveAll;
+}
+
+void params::setSavingCorners(bool savingCorners) {
+    this->savingCorners = savingCorners;
+}
+
+bool params::isSavingEdges() const {
+    return savingEdges || saveAll;
+}
+
+void params::setSavingEdges(bool savingEdges) {
+    this->savingEdges = savingEdges;
 }
 
 std::string params::getInputDir() const {
@@ -105,12 +142,16 @@ void params::setMinCornersQuality(int minCornersQuality) {
 
 void params::show() const {
     std::cout << "verbose:              " << (isVerbose() ? "true" : "false") << std::endl;
-    std::cout << "input_images_dir:     " << getInputDir() << std::endl;
-    std::cout << "output_dir:           " << getOutputDir() << std::endl;
-    std::cout << "debug:                " << (isGeneratingDebugOutput() ? "true" : "false") << std::endl;
-    std::cout << "estimated_piece_size: " << getEstimatedPieceSize() << std::endl;
+    std::cout << "input images dir:     " << getInputDir() << std::endl;
+    std::cout << "output dir:           " << getOutputDir() << std::endl;
+    std::cout << "save contour images:  " << (this->isSavingContours() ? "true" : "false") << std::endl;
+    std::cout << "save b&w images:      " << (this->isSavingBlackWhite() ? "true" : "false") << std::endl;    
+    std::cout << "save color images:    " << (this->isSavingColor() ? "true" : "false") << std::endl;        
+    std::cout << "save corner images:   " << (this->isSavingCorners() ? "true" : "false") << std::endl;        
+    std::cout << "save edge images:     " << (this->isSavingEdges() ? "true" : "false") << std::endl;            
+    std::cout << "estimated piece size: " << getEstimatedPieceSize() << std::endl;
     std::cout << "threshold:            " << getThreshold() << std::endl;
-    std::cout << "median_filter:        " << (isUsingMedianFilter() ? "true" : "false") << std::endl;
+    std::cout << "median filter:        " << (isUsingMedianFilter() ? "true" : "false") << std::endl;
     std::cout << "landscape:            " << (isUsingLandscape() ? "true" : "false") << std::endl;        
     std::cout << "partition factor:     " << getPartitionFactor() << std::endl;                
     std::cout << "min corners quality:  " << getMinCornersQuality() << std::endl;

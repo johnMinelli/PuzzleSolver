@@ -35,7 +35,12 @@ int main(int argc, char * argv[])
       ("t,threshold", "Threshold", cxxopts::value<int>()->default_value("30"))
       ("i,image", "Solution image filename", cxxopts::value<std::string>()->default_value("solution.png"))      
       ("f,filter", "Use filter() instead of median_filter()", cxxopts::value<bool>()->default_value("false"))
-      ("d,debug", "Output intermediate images", cxxopts::value<bool>()->default_value("false"))
+      ("save-all", "Save all images (contours, b&w, color, corners, edges)", cxxopts::value<bool>()->default_value("false"))
+      ("save-contours", "Save contour images", cxxopts::value<bool>()->default_value("false"))            
+      ("save-bw", "Save black&white images", cxxopts::value<bool>()->default_value("false"))                        
+      ("save-color", "Save color images", cxxopts::value<bool>()->default_value("false"))                                    
+      ("save-corners", "Save corner images", cxxopts::value<bool>()->default_value("false"))                                                
+      ("save-edges", "Save edge images", cxxopts::value<bool>()->default_value("false"))                                                
       ("l,landscape", "Input images are in landscape orientation", cxxopts::value<bool>()->default_value("false"))                
       ("p,partition", "Piece partition factor", cxxopts::value<float>()->default_value("1.0"))                
       ("c,corners", "Minimum corner quality", cxxopts::value<int>()->default_value("250"))                                                               
@@ -43,7 +48,7 @@ int main(int argc, char * argv[])
       ;
 
     options.parse_positional({"positional"});
-    options.positional_help("<input images directory> <output dir>");
+    options.positional_help("<directory containing input images> <output directory>");
     auto result = options.parse(argc, argv);
 
     if (result.count("help"))
@@ -67,7 +72,12 @@ int main(int argc, char * argv[])
     user_params.setInputDir(positional[0]);
     user_params.setOutputDir(positional[1]);
     user_params.setSolutionImageFilename(result["image"].as<std::string>());
-    user_params.setGeneratingDebugOutput(result["debug"].as<bool>());
+    user_params.setSaveAll(result["save-all"].as<bool>());
+    user_params.setSavingContours(result["save-contours"].as<bool>());    
+    user_params.setSavingBlackWhite(result["save-bw"].as<bool>());    
+    user_params.setSavingColor(result["save-color"].as<bool>());    
+    user_params.setSavingCorners(result["save-corners"].as<bool>());    
+    user_params.setSavingEdges(result["save-edges"].as<bool>());        
     user_params.setEstimatedPieceSize(result["size"].as<int>());
     user_params.setThreshold(result["threshold"].as<int>());
     user_params.setUsingMedianFilter(!result["filter"].as<bool>());

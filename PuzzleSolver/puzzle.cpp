@@ -42,7 +42,7 @@ puzzle::puzzle(params& _user_params) : user_params(_user_params) {
     std::cout << "extracting pieces" << std::endl;
     pieces = extract_pieces();
     solved = false;
-    if (user_params.isGeneratingDebugOutput()) {
+    if (user_params.isSavingEdges()) {
     	print_edges();
     }
 }
@@ -102,9 +102,15 @@ std::vector<piece> puzzle::extract_pieces() {
     //For each input image
     for(uint i = 0; i<color_images.size(); i++){
 
-        if (user_params.isGeneratingDebugOutput()) {
-            write_debug_img(user_params, bw[i],"bw", i);
-            write_debug_img(user_params, color_images[i], "color", i);
+        char image_number_buf[80];
+        sprintf(image_number_buf, "%03d", i+1);
+        std::string image_number(image_number_buf);
+        
+        if (user_params.isSavingBlackWhite()) {
+            write_debug_img(user_params, bw[i],"bw", image_number);
+        }
+        if (user_params.isSavingColor()) {
+            write_debug_img(user_params, color_images[i], "color", image_number);
         }
 
         std::vector<std::vector<cv::Point> > found_contours;
@@ -133,7 +139,20 @@ std::vector<piece> puzzle::extract_pieces() {
 
         contour_mgr.sort_contours();
         
+        if (user_params.isSavingContours()) {
+            std::vector<std::vector<cv::Point> > contours_to_draw;
+            cv::Mat cmat = cv::Mat::zeros(bw[i].size().height, bw[i].size().width, CV_8UC3);            
+            for (uint j = 0; j < contour_mgr.contours.size(); j++) {
+                cv::Rect bounds = contour_mgr.contours[j].bounds;
+                contours_to_draw.push_back(contour_mgr.contours[j].points);
+                cv::putText(cmat, std::to_string(j+1), cv::Point2f(bounds.x+bounds.width/2-10.0,bounds.y+bounds.height/2),
+                        cv::FONT_HERSHEY_COMPLEX_SMALL, 1, cv::Scalar(0, 175, 175), 1, CV_AA);                
+            }
 
+            cv::drawContours(cmat, contours_to_draw, -1, cv::Scalar(255,255,255), 2, 16);
+            write_debug_img(user_params, cmat, "contours", image_number);
+        }
+        
         for (uint j = 0; j < contour_mgr.contours.size(); j++) {
             int bordersize = 15;
             std::stringstream idstream;
@@ -152,17 +171,19 @@ std::vector<piece> puzzle::extract_pieces() {
             contours_to_draw.push_back(translate_contour(points, bordersize-bounds.x, bordersize-bounds.y));
             cv::drawContours(new_bw, contours_to_draw, -1, cv::Scalar(255), CV_FILLED);
 
-            if (user_params.isGeneratingDebugOutput()) {
-                write_debug_img(user_params, new_bw, "contour", piece_id);
+            if (user_params.isSavingBlackWhite()) {
+                write_debug_img(user_params, new_bw, "bw", piece_id);
             }
 
-            bounds.width += bordersize*2;
-            bounds.height += bordersize*2;
-            bounds.x -= bordersize;
-            bounds.y -= bordersize;
-//            cv::imwrite("/tmp/final/bw.png", bw[i](bounds));
-            cv::Mat mini_color = color_images[i](bounds);
-            cv::Mat mini_bw = new_bw;//bw[i](bounds);
+            cv::Rect b2(bounds.x-3, bounds.y-3, bounds.width+6, bounds.height+6);
+            cv::Mat color_roi = color_images[i](b2);
+            cv::Mat mini_color = cv::Mat::zeros(bounds.height+2*bordersize,bounds.width+2*bordersize,CV_8UC3);
+            color_roi.copyTo(mini_color(cv::Rect(bordersize,bordersize,b2.width,b2.height)));
+            
+            if (user_params.isSavingColor()) {
+                write_debug_img(user_params, mini_color, "color", piece_id);
+            }
+            cv::Mat mini_bw = new_bw;
             //Create a copy so it can't conflict.
             mini_color = mini_color.clone();
             mini_bw = mini_bw.clone();

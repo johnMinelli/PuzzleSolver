@@ -59,6 +59,72 @@ void piece::process(){
 }
 
 
+// compute the total distance traveling from 0 to index1, index2, index3
+template <class T>
+double ts_distance(std::vector<cv::Point_<T>> corners, uint index1, uint index2, uint index3) {
+    
+    double result = distance<T>(corners, 0, index1);
+    result += distance<T>(corners, index1, index2);
+    result += distance<T>(corners, index2, index3);
+    result += distance<T>(corners, index3, 0);
+    return result;
+}
+
+// Produce a metric that determines the quality of the piece corners. This function 
+// assumes 4 corners and returns 0 for a perfect rectangle, and higher values for 
+// shapes that are less like a rectangle.
+template <class T>
+double compute_corners_quality(std::vector<cv::Point_<T>> corners) {
+
+    if (corners.size() != 4) {
+        return 2000.0 * std::fabs(corners.size() - 4);
+    }
+    
+    // order the corners using a simplified shortest path algorithm.  We just
+    // need the points in clockwise or counter-clockwise order starting anywhere.
+    std::vector<cv::Point_<T>> cpoints; // corners ordered by shortest path
+    cpoints.push_back(corners[0]);
+    
+    double tsd0 = ts_distance( corners, 1, 2, 3);
+    double tsd1 = ts_distance( corners, 2, 1, 3);
+    double tsd2 = ts_distance( corners, 1, 3, 2);
+    
+    if (tsd0 < tsd1 && tsd0 < tsd2) {
+        cpoints.push_back(corners[1]);
+        cpoints.push_back(corners[2]);
+        cpoints.push_back(corners[3]);        
+    } else if (tsd1 < tsd2) {
+        cpoints.push_back(corners[2]);
+        cpoints.push_back(corners[1]);
+        cpoints.push_back(corners[3]);         
+    } else {
+        cpoints.push_back(corners[1]);
+        cpoints.push_back(corners[3]);
+        cpoints.push_back(corners[2]);         
+    }
+    
+    // quality will be determined by comparing the interior angles to 90 degrees
+    // and by comparing the lengths of opposite sides.
+    double quality = 0.0;
+
+    double side_length[4] = {0, 0, 0, 0};
+    
+    for (uint i = 0; i < 4; i++) {
+        double angle_diff = compute_angle<T>(cpoints, i) - 90.0;
+        double corner_quality = angle_diff * angle_diff;
+        quality += corner_quality;
+        
+        side_length[i] = distance<T>(cpoints, i, i+1);
+    }
+    
+    // sldiff is the percent difference between opposite side lengths.
+    double sldiff = 100.0 * (side_length[0] - side_length[2]) / std::min<double>(side_length[0], side_length[2]);
+    quality += (sldiff * sldiff);
+    sldiff = sldiff = (side_length[1] - side_length[3]) / std::min<double>(side_length[1], side_length[3]);
+    quality += (sldiff * sldiff);
+
+    return quality;
+}
 
 
 
@@ -119,12 +185,12 @@ void piece::find_corners(){
 
     //More debug stuff, this will mark the corners with a red circle and save the image
 
-    if (user_params.isGeneratingDebugOutput()) {
+    if (user_params.isSavingCorners()) {
         cv::Mat corners_img = full_color.clone();
         for(uint i = 0; i < corners.size(); i++ ) {
             circle( corners_img, corners[i],(int) corners.size(), cv::Scalar(0,0,255), -1, 8, 0 );
-            putText(corners_img, std::to_string(i), corners[i] + cv::Point2f(10.0,10.0),
-                                    cv::FONT_HERSHEY_COMPLEX_SMALL, 1, cvScalar(0, 175, 175), 1, CV_AA);
+//            putText(corners_img, std::to_string(i), corners[i] + cv::Point2f(10.0,10.0),
+//                                    cv::FONT_HERSHEY_COMPLEX_SMALL, 1, cvScalar(0, 175, 175), 1, CV_AA);
         }
         std::stringstream out_file_name;
         out_file_name << user_params.getOutputDir() << "corners_" << id << ".png";

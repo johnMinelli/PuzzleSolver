@@ -23,10 +23,14 @@ private:
     bool useLandscape;
     float partitionFactor;
     int minCornersQuality;
-    int xInt;
-    float yFloat;
-    bool zBool;
     
+    bool saveAll;
+    bool savingContours;
+    bool savingBlackWhite;
+    bool savingColor;
+    bool savingCorners;
+    bool savingEdges;
+
 public:
     params();
 
@@ -34,10 +38,28 @@ public:
 
     void setEstimatedPieceSize(int estimatedPieceSize) ;
 
-    bool isGeneratingDebugOutput() const ;
+    void setSaveAll(bool writeAll);
+    
+    bool isSavingBlackWhite() const ;
 
-    void setGeneratingDebugOutput(bool generatingDebugOutput) ;
+    void setSavingBlackWhite(bool savingBlackWhite);
 
+    bool isSavingColor() const ;
+
+    void setSavingColor(bool savingColor);
+
+    bool isSavingContours() const ;
+
+    void setSavingContours(bool savingContours);
+
+    bool isSavingCorners() const ;
+
+    void setSavingCorners(bool savingCorners);
+
+    bool isSavingEdges() const ;
+
+    void setSavingEdges(bool savingEdges);
+    
     std::string getInputDir() const ;
 
     void setInputDir(std::string inputDir) ;
