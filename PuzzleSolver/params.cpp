@@ -12,6 +12,14 @@
 params::params() {
 }
 
+bool params::isSolving() const {
+    return solving;
+}
+
+void params::setSolving(bool solving) {
+    this->solving = solving;
+}
+    
 int params::getEstimatedPieceSize() const {
     return estimatedPieceSize;
 }
@@ -20,9 +28,25 @@ void params::setEstimatedPieceSize(int estimatedPieceSize) {
     this->estimatedPieceSize = estimatedPieceSize;
 }
 
+std::string params::getPieceOrder() const {
+    return pieceOrder;
+}
+
+void params::setPieceOrder(std::string pieceOrder) {
+    this->pieceOrder = pieceOrder;
+}
+
 void params::setSaveAll(bool saveAll)
 {
     this->saveAll = saveAll;
+}
+
+bool params::isSavingOriginals() const {
+    return savingOriginals || saveAll;
+}
+
+void params::setSavingOriginals(bool savingOriginals) {
+    this->savingOriginals = savingOriginals;
 }
 
 bool params::isSavingBlackWhite() const {
@@ -99,12 +123,12 @@ void params::setPartitionFactor(float partitionFactor) {
     this->partitionFactor = partitionFactor;
 }
 
-std::string params::getSolutionImageFilename() const {
-    return solutionImageFilename;
+std::string params::getSolutionFileBasename() const {
+    return solutionFileBasename;
 }
 
-void params::setSolutionImageFilename(std::string solutionImageFilename) {
-    this->solutionImageFilename = solutionImageFilename;
+void params::setSolutionFileBasename(std::string solutionImageFilename) {
+    this->solutionFileBasename = solutionImageFilename;
 }
 
 int params::getThreshold() const {
@@ -113,14 +137,6 @@ int params::getThreshold() const {
 
 void params::setThreshold(int threshold) {
     this->threshold = threshold;
-}
-
-bool params::isUsingLandscape() const {
-    return useLandscape;
-}
-
-void params::setUsingLandscape(bool useLandscape) {
-    this->useLandscape = useLandscape;
 }
 
 bool params::isUsingMedianFilter() const {
@@ -142,19 +158,21 @@ void params::setMinCornersQuality(int minCornersQuality) {
 
 void params::show() const {
     std::cout << "verbose:              " << (isVerbose() ? "true" : "false") << std::endl;
-    std::cout << "input images dir:     " << getInputDir() << std::endl;
-    std::cout << "output dir:           " << getOutputDir() << std::endl;
+    std::cout << "input images dir:     " << this->getInputDir() << std::endl;
+    std::cout << "output dir:           " << this->getOutputDir() << std::endl;
+    std::cout << "solution name:        " << this->getSolutionFileBasename() << std::endl;
+    std::cout << "estimated piece size: " << this->getEstimatedPieceSize() << std::endl;
+    std::cout << "threshold:            " << this->getThreshold() << std::endl;
+    std::cout << "median filter:        " << (this->isUsingMedianFilter() ? "true" : "false") << std::endl;
+    std::cout << "piece order:          " << this->getPieceOrder() << std::endl;        
+    std::cout << "partition factor:     " << this->getPartitionFactor() << std::endl;                
+    std::cout << "min corners quality:  " << this->getMinCornersQuality() << std::endl;
+    std::cout << "save original images: " << (this->isSavingOriginals() ? "true" : "false") << std::endl;
     std::cout << "save contour images:  " << (this->isSavingContours() ? "true" : "false") << std::endl;
     std::cout << "save b&w images:      " << (this->isSavingBlackWhite() ? "true" : "false") << std::endl;    
     std::cout << "save color images:    " << (this->isSavingColor() ? "true" : "false") << std::endl;        
     std::cout << "save corner images:   " << (this->isSavingCorners() ? "true" : "false") << std::endl;        
-    std::cout << "save edge images:     " << (this->isSavingEdges() ? "true" : "false") << std::endl;            
-    std::cout << "estimated piece size: " << getEstimatedPieceSize() << std::endl;
-    std::cout << "threshold:            " << getThreshold() << std::endl;
-    std::cout << "median filter:        " << (isUsingMedianFilter() ? "true" : "false") << std::endl;
-    std::cout << "landscape:            " << (isUsingLandscape() ? "true" : "false") << std::endl;        
-    std::cout << "partition factor:     " << getPartitionFactor() << std::endl;                
-    std::cout << "min corners quality:  " << getMinCornersQuality() << std::endl;
+    std::cout << "save edge images:     " << (this->isSavingEdges() ? "true" : "false") << std::endl;      
 }
 
 params::~params() {

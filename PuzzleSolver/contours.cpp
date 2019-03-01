@@ -8,6 +8,40 @@
 #include <bits/stdc++.h>
 #include <opencv2/core.hpp>
 
+
+piece_order::piece_order(std::string name, bool partition_rows, bool partition_order_asc, bool item_order_asc) :
+        name(name), partition_rows(partition_rows), partitions_asc(partition_order_asc), items_asc(item_order_asc) {}
+
+void piece_order::init() {
+    if (items.size() != 0) {
+        return;
+    }
+    items["lrtb"] = new piece_order("lrtb", true, true, true);
+    items["lrbt"] = new piece_order("lrbt", true, false, true);
+    items["rltb"] = new piece_order("rltb", true, true, false);
+    items["rlbt"] = new piece_order("rlbt", true, false, false);
+    items["tblr"] = new piece_order("tblr", false, true, true);
+    items["tbrl"] = new piece_order("tbrl", false, false, true);
+    items["btlr"] = new piece_order("btlr", false, true, false);
+    items["btrl"] = new piece_order("btrl", false, false, false);    
+}
+
+void piece_order::names(std::vector<std::string>& namevec) {
+    for(std::map<std::string,piece_order*>::iterator it = items.begin(); it != items.end(); ++it) {
+        namevec.push_back(it->first);
+    }
+}
+
+piece_order* piece_order::lookup(std::string name) {
+    if (items.size() == 0) {
+        piece_order::init();
+    }
+    std::map<std::string,piece_order*>::iterator it = items.find(name);
+    return (it == items.end()) ? NULL : it->second;
+}
+    
+std::map<std::string,piece_order*> piece_order::items;
+
 contour::contour(cv::Rect _bounds, std::vector<cv::Point> _points) : bounds(_bounds), points(_points) {}
 
 contour_partition::contour_partition(int index) {
@@ -42,9 +76,11 @@ void contour_mgr::sort_contours() {
     // First, partition the contours based on x (or y) position.
     std::vector<int> labels;
 
-    // partition the contours into rows (or columns if landscape==true)
+    piece_order* porder = piece_order::lookup(user_params.getPieceOrder());
+    
+    // partition the contours into rows (or columns if partition_rows==false)
     cv::partition(contours, labels, [=](const contour& a, const contour& b) {
-        int diff = user_params.isUsingLandscape() ? (a.bounds.x - b.bounds.x) : (a.bounds.y - b.bounds.y);
+        int diff = porder->partition_rows ? (a.bounds.y - b.bounds.y) : (a.bounds.x - b.bounds.x);
         return std::abs(diff) < user_params.getEstimatedPieceSize() * user_params.getPartitionFactor();
     });
 
@@ -68,13 +104,13 @@ void contour_mgr::sort_contours() {
     for (uint i = 0; i < contours.size(); i++) {
         int partition = labels[i];
         int current_offset = partition_array[partition]->offset;
-        int extent = user_params.isUsingLandscape() ? contours[i].bounds.x : contours[i].bounds.y;
+        int extent = porder->partition_rows ? contours[i].bounds.y : contours[i].bounds.x;
         partition_array[partition]->offset = std::min(extent, current_offset);
     }
 
     // Sort the partitions into offset order
-    std::sort(partition_vector.begin(), partition_vector.end(), [](contour_partition* a, contour_partition* b) {
-        return (a->offset) < (b-> offset);
+    std::sort(partition_vector.begin(), partition_vector.end(), [=](contour_partition* a, contour_partition* b) {
+        return porder->partitions_asc ? (a->offset) < (b-> offset) : (b->offset) < (a-> offset);
     });
 
     // Assign the partition order attribute based on the sorted order
@@ -82,12 +118,14 @@ void contour_mgr::sort_contours() {
         partition_vector[i]->order = i;
     }
 
-    int container_dimension = user_params.isUsingLandscape() ? container_height : container_width;
+    int container_dimension = porder->partition_rows ? container_width : container_height;
     // Assign the sort_factor to each contour
     for (uint i = 0; i < contours.size(); i++) {
-
-        int contour_bounds_position = user_params.isUsingLandscape() ? contours[i].bounds.y : contours[i].bounds.x;
-        contours[i].sort_factor = partition_array[labels[i]]->order * container_dimension + contour_bounds_position;
+        int offset_in_partition = porder->partition_rows ? contours[i].bounds.x : contours[i].bounds.y;
+        if (!porder->items_asc) {
+            offset_in_partition = container_dimension - offset_in_partition;
+        }
+        contours[i].sort_factor = partition_array[labels[i]]->order * container_dimension + offset_in_partition;
     }
 
     // Sort the contours

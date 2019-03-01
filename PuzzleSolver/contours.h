@@ -12,9 +12,26 @@
 #ifndef CONTOURS_H
 #define CONTOURS_H
 
+#include <map>
 #include <vector>
 #include <opencv2/core/types.hpp>
 #include "params.h"
+
+// Associate names such as "lrtb" (left->right, top->bottom) with the parameters required to
+// order them via our row/colum partitioning scheme.
+class piece_order {
+public:
+    std::string name; // "lrtb", etc.
+    bool partition_rows; // true if initially partitioned into rows, false if columns
+    bool partitions_asc; // true if partitions are sorted into ascending order, false if descending
+    bool items_asc; // true if items in a partition are sorted into ascending order, false if descending
+    piece_order(std::string name, bool partition_rows, bool partition_order_asc, bool item_order_asc);
+    static piece_order* lookup(std::string name);
+    static void names(std::vector<std::string>& namevec);
+private: 
+    static void init();    
+    static std::map<std::string,piece_order*> items;
+};
 
 // Associate piece contour points and bounds so they can be sorted
 class contour {

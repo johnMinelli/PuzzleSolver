@@ -42,7 +42,10 @@ private:
 public:
     puzzle(params& userParams);
     void solve();
-    void save_image();
+    void save_solution_text();
+    std::string get_solution_image_pathname();
+    void save_solution_image();
+    void show_solution_image();
 };
 
 

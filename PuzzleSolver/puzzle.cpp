@@ -12,8 +12,11 @@
 #include <vector>
 #include <climits>
 #include <algorithm>
+#include <iostream>
+#include <fstream>
 #include <stdio.h>
 #include "omp.h"
+#include "opencv2/opencv.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/video/tracking.hpp"
@@ -45,6 +48,7 @@ puzzle::puzzle(params& _user_params) : user_params(_user_params) {
     if (user_params.isSavingEdges()) {
     	print_edges();
     }
+    std::cout << "Extracted " << pieces.size() << " pieces" << std::endl;
 }
 
 
@@ -106,11 +110,9 @@ std::vector<piece> puzzle::extract_pieces() {
         sprintf(image_number_buf, "%03d", i+1);
         std::string image_number(image_number_buf);
         
-        if (user_params.isSavingBlackWhite()) {
-            write_debug_img(user_params, bw[i],"bw", image_number);
-        }
-        if (user_params.isSavingColor()) {
-            write_debug_img(user_params, color_images[i], "color", image_number);
+        if (user_params.isSavingOriginals()) {
+            write_debug_img(user_params, bw[i],"original-bw", image_number);
+            write_debug_img(user_params, color_images[i], "original-color", image_number);
         }
 
         std::vector<std::vector<cv::Point> > found_contours;
@@ -145,8 +147,9 @@ std::vector<piece> puzzle::extract_pieces() {
             for (uint j = 0; j < contour_mgr.contours.size(); j++) {
                 cv::Rect bounds = contour_mgr.contours[j].bounds;
                 contours_to_draw.push_back(contour_mgr.contours[j].points);
+                // Text indicating contour order within the image
                 cv::putText(cmat, std::to_string(j+1), cv::Point2f(bounds.x+bounds.width/2-10.0,bounds.y+bounds.height/2),
-                        cv::FONT_HERSHEY_COMPLEX_SMALL, 1, cv::Scalar(0, 175, 175), 1, CV_AA);                
+                        cv::FONT_HERSHEY_COMPLEX_SMALL, 1, cv::Scalar(0, 255, 255), 1, CV_AA);                
             }
 
             cv::drawContours(cmat, contours_to_draw, -1, cv::Scalar(255,255,255), 2, 16);
@@ -284,19 +287,148 @@ void puzzle::solve(){
     
 }
 
+// Generates and displays the solution as text (grid of piece IDs).  The text is also saved to 
+// <solution>.txt in the output directory.  The numbers are 1-based instead of zero-based so
+// that they correspond to the piece IDs.
+void puzzle::save_solution_text() {
+    if(!solved) solve();
+    
+    std::stringstream stream;
+    
+    int width = 2;
+    if (pieces.size() > 99) {
+        width = 3;
+    } 
+    else if (pieces.size() > 999) {
+        width = 4;
+    }
+    
+    for(int row = 0; row < solution.rows; ++row) {
+        int* p = (int*)solution.ptr(row);
+        for(int col = 0; col < solution.cols; ++col) {
+            int value = *p++;
+            if (value >= 0) {
+                stream << std::setw(width) << (value + 1);
+            }
+            else {
+                stream << std::setw(width) << "";
+            }
+            stream << ", ";
+        }
+        stream << std::endl;
+    }
+    
+    stream << std::endl;
+    
+    std::string solution_text = stream.str();
+    std::cout << solution_text << std::endl;
+    
+    std::ofstream solution_text_file;
+    solution_text_file.open (user_params.getOutputDir() + user_params.getSolutionFileBasename() + ".txt");
+    solution_text_file << solution_text << std::endl;
+    solution_text_file.close();    
+}
 
+std::string puzzle::get_solution_image_pathname() {
+    return user_params.getOutputDir() + user_params.getSolutionFileBasename() + ".png";
+}
+
+
+/**
+ * Function to check if the color of the given image
+ * is the same as the given color
+ *
+ * Parameters:
+ *   edge        The source image
+ *   color   The color to check
+ */
+bool is_border(cv::Mat& edge, cv::Vec3b color)
+{
+    cv::Mat im = edge.clone().reshape(0,1);
+
+    bool res = true;
+    for (int i = 0; i < im.cols; ++i)
+        res &= (color == im.at<cv::Vec3b>(0,i));
+
+    return res;
+}
+
+/**
+ * Function to auto-cropping image
+ *
+ * Parameters:
+ *   src   The source image
+ *   dst   The destination image
+ */
+void autocrop(cv::Mat& src, cv::Mat& dst)
+{
+    cv::Rect win(0, 0, src.cols, src.rows);
+
+    std::vector<cv::Rect> edges;
+    edges.push_back(cv::Rect(0, 0, src.cols, 1));
+    edges.push_back(cv::Rect(src.cols-2, 0, 1, src.rows));
+    edges.push_back(cv::Rect(0, src.rows-2, src.cols, 1));
+    edges.push_back(cv::Rect(0, 0, 1, src.rows));
+
+    cv::Mat edge;
+    int nborder = 0;
+    cv::Vec3b color = src.at<cv::Vec3b>(src.cols-1,src.rows-1);
+
+    for (int i = 0; i < edges.size(); ++i)
+    {
+        edge = src(edges[i]);
+        nborder += is_border(edge, color);
+    }
+
+    if (nborder == 0)
+    {
+        src.copyTo(dst);
+        return;
+    }
+
+    bool next;
+
+    do {
+        edge = src(cv::Rect(win.x, win.height-2, win.width, 1));
+        if (next = is_border(edge, color))
+            win.height--;
+    }
+    while (next && win.height > 0);
+
+    do {
+        edge = src(cv::Rect(win.width-2, win.y, 1, win.height));
+        if (next = is_border(edge, color))
+            win.width--;
+    }
+    while (next && win.width > 0);
+
+    do {
+        edge = src(cv::Rect(win.x, win.y, win.width, 1));
+        if (next = is_border(edge, color))
+            win.y++, win.height--;
+    }
+    while (next && win.y <= src.rows);
+
+    do {
+        edge = src(cv::Rect(win.x, win.y, 1, win.height));
+        if (next = is_border(edge, color))
+            win.x++, win.width--;
+    }
+    while (next && win.x <= src.cols);
+
+    dst = src(win);
+}
 
 //Saves an image of the representation of the puzzle.
 //only really works when there are no holes
 //TODO: fail when puzzle is in configurations that are not possible i.e. holes
-void puzzle::save_image(){
+void puzzle::save_solution_image(){
     if(!solved) solve();
     
-    std::cout << solution << std::endl;
     
     //Use get affine to map points...
     int out_image_size = 6000;
-    cv::Mat final_out_image(out_image_size,out_image_size,CV_8UC3, cv::Scalar(200,50,3));
+    cv::Mat out_image(out_image_size,out_image_size,CV_8UC3, cv::Scalar(200,50,3));
     int border = 10;
     
     cv::Point2f ** points = new cv::Point2f*[solution.size[0]+1];
@@ -308,7 +440,7 @@ void puzzle::save_image(){
     for(int i=0; i<solution.size[0];i++){
         for(int j=0; j<solution.size[1]; j++){
             int piece_number = solution(i,j);
-            std::cout << solution(i,j) << ",";
+            std::cout << std::setw(2) << "." << std::flush;
 
             if(piece_number ==-1){
                 failed = true;
@@ -357,7 +489,7 @@ void puzzle::save_image(){
             cv::warpAffine(pieces[piece_number].full_color, layer, a_trans_mat, cv::Size2i(layer_size,layer_size),cv::INTER_LINEAR,cv::BORDER_TRANSPARENT);
             cv::warpAffine(pieces[piece_number].bw, layer_mask, a_trans_mat, cv::Size2i(layer_size,layer_size),cv::INTER_NEAREST,cv::BORDER_TRANSPARENT);
             
-            layer.copyTo(final_out_image(cv::Rect(0,0,layer_size,layer_size)), layer_mask);
+            layer.copyTo(out_image(cv::Rect(0,0,layer_size,layer_size)), layer_mask);
             
         }
         std::cout << std::endl;
@@ -367,7 +499,10 @@ void puzzle::save_image(){
         std::cout << "Failed, only partial image generated" << std::endl;
     }
 
-    cv::imwrite(user_params.getOutputDir() + user_params.getSolutionImageFilename(),final_out_image);
+    cv::Mat final_out_image;
+    
+    autocrop(out_image, final_out_image);
+    cv::imwrite(get_solution_image_pathname(), final_out_image);
     
     
 
@@ -375,4 +510,25 @@ void puzzle::save_image(){
         delete points[i];
     delete[] points;
     
+}
+
+void puzzle::show_solution_image() {
+    cv::Mat solution_image = cv::imread(get_solution_image_pathname());
+
+    float aspect = (float)solution_image.size().width / solution_image.size().height;
+    
+    int height = 1000 / aspect;
+    
+    std::string window_name = "solution";
+    cv::namedWindow(window_name, cv::WINDOW_NORMAL);
+    cv::resizeWindow(window_name, 1000, height);
+
+    cv::imshow(window_name, solution_image);
+    cv::waitKey(0);    
+    try {
+        cv::destroyWindow(window_name);
+    }
+    catch (cv::Exception x) {
+        // Ignore
+    }
 }

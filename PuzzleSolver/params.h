@@ -12,19 +12,19 @@
 
 class params {
 private:
+    bool solving;
     bool verbose;
     std::string inputDir;
     std::string outputDir;
-    std::string solutionImageFilename;
-    bool generatingDebugOutput;
+    std::string solutionFileBasename;
+    std::string pieceOrder;
     int estimatedPieceSize;
     int threshold;
     bool useMedianFilter;
-    bool useLandscape;
     float partitionFactor;
     int minCornersQuality;
-    
     bool saveAll;
+    bool savingOriginals;
     bool savingContours;
     bool savingBlackWhite;
     bool savingColor;
@@ -34,67 +34,75 @@ private:
 public:
     params();
 
-    int getEstimatedPieceSize() const ;
+    bool isSolving() const;
 
-    void setEstimatedPieceSize(int estimatedPieceSize) ;
-
-    void setSaveAll(bool writeAll);
+    void setSolving(bool solving);
     
-    bool isSavingBlackWhite() const ;
+    bool isVerbose() const;
 
-    void setSavingBlackWhite(bool savingBlackWhite);
+    void setVerbose(bool Verbose);    
 
-    bool isSavingColor() const ;
+    std::string getInputDir() const;
 
-    void setSavingColor(bool savingColor);
-
-    bool isSavingContours() const ;
-
-    void setSavingContours(bool savingContours);
-
-    bool isSavingCorners() const ;
-
-    void setSavingCorners(bool savingCorners);
-
-    bool isSavingEdges() const ;
-
-    void setSavingEdges(bool savingEdges);
+    void setInputDir(std::string inputDir);
     
-    std::string getInputDir() const ;
+    std::string getOutputDir() const;
 
-    void setInputDir(std::string inputDir) ;
+    void setOutputDir(std::string outputDir);
+    
+    std::string getSolutionFileBasename() const;
 
-    bool isVerbose() const ;
+    void setSolutionFileBasename(std::string solutionImageFilename);
+    
+    std::string getPieceOrder() const;
 
-    void setVerbose(bool Verbose) ;
+    void setPieceOrder(std::string pieceOrder);
+    
+    int getEstimatedPieceSize() const;
 
-    std::string getOutputDir() const ;
+    void setEstimatedPieceSize(int estimatedPieceSize);
+    
+    float getPartitionFactor() const;
 
-    void setOutputDir(std::string outputDir) ;
+    void setPartitionFactor(float partitionFactor);
 
-    float getPartitionFactor() const ;
+    int getThreshold() const;
 
-    void setPartitionFactor(float partitionFactor) ;
+    void setThreshold(int threshold);
 
-    std::string getSolutionImageFilename() const ;
+    bool isUsingMedianFilter() const;
 
-    void setSolutionImageFilename(std::string solutionImageFilename) ;
-
-    int getThreshold() const ;
-
-    void setThreshold(int threshold) ;
-
-    bool isUsingLandscape() const ;
-
-    void setUsingLandscape(bool useLandscape) ;
-
-    bool isUsingMedianFilter() const ;
-
-    void setUsingMedianFilter(bool useMedianFilter) ;
+    void setUsingMedianFilter(bool useMedianFilter);
     
     int getMinCornersQuality() const;
 
     void setMinCornersQuality(int minCornersQuality);
+
+    void setSaveAll(bool writeAll);
+    
+    bool isSavingOriginals() const;
+
+    void setSavingOriginals(bool savingOriginals);
+
+    bool isSavingBlackWhite() const;
+
+    void setSavingBlackWhite(bool savingBlackWhite);
+
+    bool isSavingColor() const;
+
+    void setSavingColor(bool savingColor);
+
+    bool isSavingContours() const;
+
+    void setSavingContours(bool savingContours);
+
+    bool isSavingCorners() const;
+
+    void setSavingCorners(bool savingCorners);
+
+    bool isSavingEdges() const;
+
+    void setSavingEdges(bool savingEdges);    
 
     void show() const;
     virtual ~params();
