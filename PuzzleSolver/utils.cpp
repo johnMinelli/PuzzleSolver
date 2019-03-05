@@ -26,20 +26,25 @@ imlist getImages(std::string path){
     struct dirent *ep;
     dp = opendir (path.c_str());
     
-    if (dp != NULL)
-    {
-        while ((ep = readdir(dp))){
-            cv::Mat image = cv::imread(path+ep->d_name);
-//            std::cout << path+ep->d_name << std::endl;
-            if(image.data!=NULL) v.push_back(image);
-        }
-        closedir(dp);
+    std::vector<std::string> filenames;
+    
+    if (dp == NULL) {
+        std::cout << "Couldn't open the directory: " << path << std::endl;
+        exit(1);        
     }
-    else{
-        std::cout << "Couldn't open the directory" << std::endl;
-        
-        exit(1);
+    
+    while ((ep = readdir(dp))) {
+        filenames.push_back(path+ep->d_name);
     }
+    closedir(dp);
+    
+    std::sort(filenames.begin(), filenames.end());
+    
+    for (std::vector<std::string>::iterator i = filenames.begin(); i != filenames.end(); i++) {
+        cv::Mat image = cv::imread(*i);
+        if(image.data!=NULL) v.push_back(image);
+    }
+    
     return v;
 }
 

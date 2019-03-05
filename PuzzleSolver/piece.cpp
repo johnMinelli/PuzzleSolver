@@ -7,6 +7,7 @@
 //
 
 #include "piece.h"
+#include "edit_corners.h"
 
 #include <cassert>
 #include <algorithm>
@@ -136,7 +137,7 @@ void piece::find_corners(){
     //How close can 2 corners be?
     double minDistance = user_params.getEstimatedPieceSize();
     //How big of an area to look for the corner in.
-    int blockSize = 12;
+    int blockSize = user_params.getFindCornersBlockSize();
     bool useHarrisDetector = true;
     double k = 0.04;
     
@@ -182,26 +183,33 @@ void piece::find_corners(){
     /// Calculate the refined corner locations
     cv::cornerSubPix( bw, corners, winSize, zeroZone, criteria );
     
-
+    double cornersQuality = compute_corners_quality<float>(corners);
+    if (cornersQuality > user_params.getMinCornersQuality()) {
+        std::cerr << "Warning: poor corners for piece " << id << ", quality: " << cornersQuality << std::endl;
+        
+        if (user_params.isEditingCorners()) {
+            std::vector<cv::Point2f> edited_corners;
+            if (edit_corners(id, full_color, user_params.getCornerEditorScale(), corners, edited_corners, user_params.isVerbose())) {
+                corners = edited_corners;
+                cornersQuality = compute_corners_quality<float>(corners);
+                std::cerr << "New corner quality for piece " << id << ", quality: " << cornersQuality << std::endl;
+            }
+        }
+    }
+    
     //More debug stuff, this will mark the corners with a red circle and save the image
-
-    if (user_params.isSavingCorners()) {
+    if (user_params.isSavingCorners() || user_params.getMinCornersQuality() < cornersQuality) {
         cv::Mat corners_img = full_color.clone();
         for(uint i = 0; i < corners.size(); i++ ) {
             circle( corners_img, corners[i],(int) corners.size(), cv::Scalar(0,0,255), -1, 8, 0 );
-//            putText(corners_img, std::to_string(i), corners[i] + cv::Point2f(10.0,10.0),
-//                                    cv::FONT_HERSHEY_COMPLEX_SMALL, 1, cvScalar(0, 175, 175), 1, CV_AA);
         }
         std::stringstream out_file_name;
         out_file_name << user_params.getOutputDir() << "corners_" << id << ".png";
         cv::imwrite(out_file_name.str(), corners_img);
     }
     
-    double cornersQuality = compute_corners_quality<float>(corners);
-    if (user_params.getMinCornersQuality() < cornersQuality) {
-        std::cerr << "Warning: poor corners for piece " << id << ", quality: " << cornersQuality << std::endl;
-    }
-    if (!found_all_corners) {
+
+    if (corners.size() < 4) {
         std::cerr << "Only found " << corners.size() << " corners for piece " << id << std::endl;
         exit(2);
     }

@@ -12,6 +12,8 @@
 #include <cassert>
 #include <sys/time.h>
 #include <sys/stat.h>
+#include <stdlib.h>
+#include <libgen.h>
 
 #include "cxxopts.hpp"
 #include "params.h"
@@ -20,9 +22,6 @@
 #include "utils.h"
 #include "contours.h"
 
-//Dont forget final "/" in directory name.
-// static const std::string input = "/Users/jzeimen/Documents/school/College/Spring2013/ComputerVision/FinalProject/PuzzleSolver/PuzzleSolver/Scans/";
-// static const std::string output = "/tmp/final/finaloutput.png";
 
 class demo {
 public:
@@ -72,15 +71,18 @@ int main(int argc, char * argv[])
     options.add_options()
       ("v,verbose", "Verbose output", cxxopts::value<bool>()->default_value("false"))
       ("h,help", "Display this help message")
-      ("s,solve", "After processing the input images and extracting pieces and edges, attempt to find a solution", cxxopts::value<bool>()->default_value("false"))
+      ("s,solve", "Solve the puzzle after processing the input images and extracting pieces and edges", cxxopts::value<bool>()->default_value("false"))
       ("dont-solve", "Skip finding the solution (e.g., for a demo which normally implies --solve)", cxxopts::value<bool>()->default_value("false"))
+      ("n,solution-name", "Basename for solution text/image files written to the output directory", cxxopts::value<std::string>()->default_value("solution"))      
       ("e,estimated-size", "Estimated piece size", cxxopts::value<int>()->default_value("200"))
       ("t,threshold", "Threshold value used when converting color images to b&w.  Min: 0, max: 255.", cxxopts::value<int>()->default_value("30"))
       ("f,filter", "Use filter() instead of median_filter()", cxxopts::value<bool>()->default_value("false"))
       ("o,order", "Order of pieces in the input images", cxxopts::value<std::string>()->default_value("lrtb"))
       ("p,partition", "Piece-ordering partition factor for adjusting behavior of --order", cxxopts::value<float>()->default_value("1.0"))                
+      ("b,corners-blocksize", "Block size to use when finding corners", cxxopts::value<int>()->default_value("25"))            
       ("c,corners-quality", "Corner quality warning threshold", cxxopts::value<int>()->default_value("300"))              
-      ("n,solution-name", "Basename for solution text/image files written to the output directory", cxxopts::value<std::string>()->default_value("solution"))      
+      ("g,edit-corners","Show GUI corner editor for each piece where its corner quality exceeds the corners quality threshold", cxxopts::value<bool>()->default_value("false"))
+      ("corner-edit-scale","Scale factor for images shown in the corner editor",  cxxopts::value<float>()->default_value("1.0"))
       ("save-all", "Save all images (originals, contours, b&w, color, corners, edges)", cxxopts::value<bool>()->default_value("false"))
       ("save-originals", "Save original images", cxxopts::value<bool>()->default_value("false"))                        
       ("save-contours", "Save contour images", cxxopts::value<bool>()->default_value("false"))            
@@ -113,8 +115,14 @@ int main(int argc, char * argv[])
             std::cout << "Use --help to get the list of demo names" << std::endl;            
             exit(1);
         }
-        demo* demoptr = it->second;                
-        user_params.setInputDir("../Scans/" + demoptr->inputDir);
+        demo* demoptr = it->second;  
+
+        // Resolve the PuzzleSolver home dir (parent of 'Scans'), by assuming the PuzzleSolver exe file is in the source directory.
+        char dirnamebuf[300];
+        realpath(argv[0], dirnamebuf);
+        char* puzzleSolverHome=dirname(dirname(dirnamebuf));
+        
+        user_params.setInputDir(std::string(puzzleSolverHome) + "/Scans/" + demoptr->inputDir);
         user_params.setOutputDir("/tmp/"+demoptr->name);
         user_params.setSolving(true);        
         user_params.setEstimatedPieceSize(demoptr->estimated_piece_size);
@@ -171,7 +179,10 @@ int main(int argc, char * argv[])
     user_params.setSolutionFileBasename(result["solution-name"].as<std::string>());
     user_params.setPieceOrder(result["order"].as<std::string>());
     user_params.setPartitionFactor(result["partition"].as<float>());
+    user_params.setFindCornersBlockSize(result["corners-blocksize"].as<int>());
     user_params.setMinCornersQuality(result["corners-quality"].as<int>());  
+    user_params.setEditingCorners(result["edit-corners"].as<bool>());
+    user_params.setCornerEditorScale(result["corner-edit-scale"].as<float>());
     user_params.setSaveAll(result["save-all"].as<bool>());
     user_params.setSavingOriginals(result["save-originals"].as<bool>());    
     user_params.setSavingContours(result["save-contours"].as<bool>());        

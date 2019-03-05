@@ -30,6 +30,9 @@ private:
     bool savingColor;
     bool savingCorners;
     bool savingEdges;
+    int findCornersBlockSize;
+    bool editingCorners;
+    float cornerEditorScale;
 
 public:
     params();
@@ -103,7 +106,19 @@ public:
     bool isSavingEdges() const;
 
     void setSavingEdges(bool savingEdges);    
+    
+    int getFindCornersBlockSize() const;
 
+    void setFindCornersBlockSize(int findCornersBlockSize);
+    
+    float getCornerEditorScale() const;
+
+    void setCornerEditorScale(float cornerEditorScale);
+
+    bool isEditingCorners() const;
+
+    void setEditingCorners(bool editingCorners);
+    
     void show() const;
     virtual ~params();
 

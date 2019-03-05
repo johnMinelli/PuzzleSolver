@@ -512,6 +512,7 @@ void puzzle::save_solution_image(){
     
 }
 
+
 void puzzle::show_solution_image() {
     cv::Mat solution_image = cv::imread(get_solution_image_pathname());
 
@@ -523,8 +524,33 @@ void puzzle::show_solution_image() {
     cv::namedWindow(window_name, cv::WINDOW_NORMAL);
     cv::resizeWindow(window_name, 1000, height);
 
+    int rotation_code = 3; // 0 = 90, 1 = 180, 2 = 270, 3 = 0
+    cv::Mat rotated;
     cv::imshow(window_name, solution_image);
-    cv::waitKey(0);    
+    
+    std::cout << "Press the 'r' key one or more times to rotate the solution image" << std::endl;
+    
+    bool done = false;
+    do {
+        int key = cv::waitKey(0);    
+        switch (key) {
+            case -1:
+            case 'q':
+                done = true;
+                break;
+            case 'r':
+                rotation_code = (rotation_code + 1) % 4;
+                if (rotation_code == 3) {
+                    rotated = solution_image.clone();
+                } else {
+                    cv::rotate(solution_image, rotated, rotation_code);
+                }
+                cv::imshow(window_name, rotated);
+                break;
+            default:
+                break;
+        }
+    } while (!done);
     try {
         cv::destroyWindow(window_name);
     }
