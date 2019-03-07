@@ -5,7 +5,6 @@
  */
 #include "contours.h"
 
-#include <bits/stdc++.h>
 #include <opencv2/core.hpp>
 
 

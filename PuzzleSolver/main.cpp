@@ -21,6 +21,7 @@
 #include "PuzzleDisjointSet.h"
 #include "utils.h"
 #include "contours.h"
+#include "config.h"
 
 
 class demo {
@@ -66,7 +67,7 @@ int main(int argc, char * argv[])
     register_demo(demos, "horses", "horses", 380, 50, false, "104 pieces, estimated-size=380, threshold=50, median_filter()");
     register_demo(demos, "horses-numbered", "horses numbered", 380, 50, false, "104 pieces, estimated-size=380, threshold=50, median_filter()");
 
-    cxxopts::Options options("PuzzleSolver", "Solve jigsaw puzzles using the shapes of the piece edges");
+    cxxopts::Options options("PuzzleSolver", std::string("Version: ") + std::string(VERSION) + std::string("\nSolve jigsaw puzzles using the shapes of the piece edges.\n"));
 
     options.add_options()
       ("v,verbose", "Verbose output", cxxopts::value<bool>()->default_value("false"))
@@ -74,13 +75,15 @@ int main(int argc, char * argv[])
       ("s,solve", "Solve the puzzle after processing the input images and extracting pieces and edges", cxxopts::value<bool>()->default_value("false"))
       ("dont-solve", "Skip finding the solution (e.g., for a demo which normally implies --solve)", cxxopts::value<bool>()->default_value("false"))
       ("n,solution-name", "Basename for solution text/image files written to the output directory", cxxopts::value<std::string>()->default_value("solution"))      
-      ("e,estimated-size", "Estimated piece size", cxxopts::value<int>()->default_value("200"))
-      ("t,threshold", "Threshold value used when converting color images to b&w.  Min: 0, max: 255.", cxxopts::value<int>()->default_value("30"))
+      ("e,estimated-size", "Estimated piece size", cxxopts::value<uint>()->default_value("200"))
+      ("t,threshold", "Threshold value used when converting color images to b&w.  Min: 0, max: 255.", cxxopts::value<uint>()->default_value("30"))
       ("f,filter", "Use filter() instead of median_filter()", cxxopts::value<bool>()->default_value("false"))
+      ("m,median-blur-ksize", "Median blur ksize value. Must be odd and greater than 1, e.g.: 3, 5, 7 ...", cxxopts::value<uint>()->default_value("5"))
+      ("i,initial-piece-id", "Identify pieces starting with this number", cxxopts::value<uint>()->default_value("1"))            
       ("o,order", "Order of pieces in the input images", cxxopts::value<std::string>()->default_value("lrtb"))
       ("p,partition", "Piece-ordering partition factor for adjusting behavior of --order", cxxopts::value<float>()->default_value("1.0"))                
-      ("b,corners-blocksize", "Block size to use when finding corners", cxxopts::value<int>()->default_value("25"))            
-      ("c,corners-quality", "Corner quality warning threshold", cxxopts::value<int>()->default_value("300"))              
+      ("b,corners-blocksize", "Block size to use when finding corners", cxxopts::value<uint>()->default_value("25"))            
+      ("c,corners-quality", "Corner quality warning threshold", cxxopts::value<uint>()->default_value("300"))              
       ("g,edit-corners","Show GUI corner editor for each piece where its corner quality exceeds the corners quality threshold", cxxopts::value<bool>()->default_value("false"))
       ("corner-edit-scale","Scale factor for images shown in the corner editor",  cxxopts::value<float>()->default_value("1.0"))
       ("save-all", "Save all images (originals, contours, b&w, color, corners, edges)", cxxopts::value<bool>()->default_value("false"))
@@ -90,6 +93,7 @@ int main(int argc, char * argv[])
       ("save-color", "Save color piece images", cxxopts::value<bool>()->default_value("false"))                                    
       ("save-corners", "Save piece images showing corner locations", cxxopts::value<bool>()->default_value("false"))                                                
       ("save-edges", "Save images for each piece edge", cxxopts::value<bool>()->default_value("false")) 
+      ("save-matches", "Save images for each pair of matched edges", cxxopts::value<bool>()->default_value("false"))             
       ("d,demo","Solve a named demo puzzle.  See below for a list of demos.", cxxopts::value<std::string>()) 
 
       ("positional","Positional parameters", cxxopts::value<std::vector<std::string>>())
@@ -118,11 +122,10 @@ int main(int argc, char * argv[])
         demo* demoptr = it->second;  
 
         // Resolve the PuzzleSolver home dir (parent of 'Scans'), by assuming the PuzzleSolver exe file is in the source directory.
-        char dirnamebuf[300];
-        realpath(argv[0], dirnamebuf);
+        char* dirnamebuf = realpath(argv[0], NULL);
         char* puzzleSolverHome=dirname(dirname(dirnamebuf));
-        
         user_params.setInputDir(std::string(puzzleSolverHome) + "/Scans/" + demoptr->inputDir);
+        free(dirnamebuf);
         user_params.setOutputDir("/tmp/"+demoptr->name);
         user_params.setSolving(true);        
         user_params.setEstimatedPieceSize(demoptr->estimated_piece_size);
@@ -131,10 +134,10 @@ int main(int argc, char * argv[])
 
         // Allow some demo default values to be explicity overridden
         if (result.count("estimated-size")) {
-            user_params.setEstimatedPieceSize(result["estimated-size"].as<int>());            
+            user_params.setEstimatedPieceSize(result["estimated-size"].as<uint>());            
         }
         if (result.count("threshold")) {
-            user_params.setThreshold(result["threshold"].as<int>());
+            user_params.setThreshold(result["threshold"].as<uint>());
         }
         if (result.count("filter")) {
             user_params.setUsingMedianFilter(!result["filter"].as<bool>());
@@ -151,8 +154,8 @@ int main(int argc, char * argv[])
         user_params.setInputDir(positional[0]);
         user_params.setOutputDir(positional[1]);
         user_params.setSolving(result["solve"].as<bool>());
-        user_params.setEstimatedPieceSize(result["estimated-size"].as<int>());
-        user_params.setThreshold(result["threshold"].as<int>());
+        user_params.setEstimatedPieceSize(result["estimated-size"].as<uint>());
+        user_params.setThreshold(result["threshold"].as<uint>());
         user_params.setUsingMedianFilter(!result["filter"].as<bool>());        
     }
     
@@ -177,10 +180,12 @@ int main(int argc, char * argv[])
     }
     user_params.setVerbose(result["verbose"].as<bool>());
     user_params.setSolutionFileBasename(result["solution-name"].as<std::string>());
+    user_params.setMedianBlurKSize(result["median-blur-ksize"].as<uint>());
     user_params.setPieceOrder(result["order"].as<std::string>());
+    user_params.setInitialPieceId(result["initial-piece-id"].as<uint>());
     user_params.setPartitionFactor(result["partition"].as<float>());
-    user_params.setFindCornersBlockSize(result["corners-blocksize"].as<int>());
-    user_params.setMinCornersQuality(result["corners-quality"].as<int>());  
+    user_params.setFindCornersBlockSize(result["corners-blocksize"].as<uint>());
+    user_params.setMinCornersQuality(result["corners-quality"].as<uint>());  
     user_params.setEditingCorners(result["edit-corners"].as<bool>());
     user_params.setCornerEditorScale(result["corner-edit-scale"].as<float>());
     user_params.setSaveAll(result["save-all"].as<bool>());
@@ -190,6 +195,7 @@ int main(int argc, char * argv[])
     user_params.setSavingColor(result["save-color"].as<bool>());    
     user_params.setSavingCorners(result["save-corners"].as<bool>());    
     user_params.setSavingEdges(result["save-edges"].as<bool>());        
+    user_params.setSavingMatches(result["save-matches"].as<bool>());        
     user_params.show();
 
     mkdir(user_params.getOutputDir().c_str(), 0775);

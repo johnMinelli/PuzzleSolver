@@ -1,12 +1,9 @@
 /* 
- * File:   contours.h
- * Author: kellinwood
  *
  * Classes that participate in ordering the piece contours into rows (or columns)
  * so that the resulting pieces can be identified by their position within the 
  * input image. 
  * 
- * Created on February 19, 2019, 10:04 PM
  */
 
 #ifndef CONTOURS_H

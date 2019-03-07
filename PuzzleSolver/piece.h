@@ -42,6 +42,7 @@ public:
 
     piece(std::string id, cv::Mat color, cv::Mat bw, params& user_params);
     edge edges[4];
+    std::string get_id();
     pieceType get_type();
     cv::Point2f get_corner(int id);
     

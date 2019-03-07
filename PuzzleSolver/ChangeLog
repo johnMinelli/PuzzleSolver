@@ -1,0 +1,9 @@
+Version: 2019.0
+    * Updated to compile and build with OpenCV versions 3.x and 4.x.
+    * Added autotools support (configure and make).  OpenMP is automatically enabled when available.
+    * Added command-line option support for many of the previously hard-coded parameters.
+    * Added support for numbering pieces based on their position within the input images.
+    * Added support for detecting poor corners, and added a manual corner editing GUI.
+    * Save the text version of the solution to a file in the output directory.
+    * Auto-crop the solution image
+    * Switched to showing the solution image via OpenCV HighGUI (host-OS agnostic).

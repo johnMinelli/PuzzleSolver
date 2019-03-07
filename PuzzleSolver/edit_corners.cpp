@@ -27,7 +27,7 @@ public:
     corner_editor(std::string& window_name, cv::Mat& image, float scale_factor, std::vector<cv::Point2f>& original_corners, std::vector<cv::Point2f>& edited_corners, bool verbose) :
         window_name(window_name), scale_factor(scale_factor), original_corners(original_corners), edited_corners(edited_corners), verbose(verbose) 
     {
-        circle_size = UNSCALED_CIRCLE_SIZE * scale_factor;
+        circle_size = image.size().width * scale_factor / 50;
         corner_index = -1;
         edited = false;
         

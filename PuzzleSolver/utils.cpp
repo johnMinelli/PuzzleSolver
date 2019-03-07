@@ -11,7 +11,7 @@
 
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/imgproc.hpp"
-
+#include "compat_opencv.h"
 
 
 void line(cv::Mat mat, std::vector<cv::Point> points, int index1, int index2, cv::Scalar color) {
@@ -49,12 +49,13 @@ imlist getImages(std::string path){
 }
 
 
+
 //Easy way to take a list of images and create a bw image at a specified threshold.
 imlist color_to_bw(imlist color, int threshold){
     imlist black_and_white;
     for(imlist::iterator i = color.begin(); i != color.end(); i++){
         cv::Mat bw;
-        cv::cvtColor(*i, bw, CV_BGR2GRAY);
+        cv::cvtColor(*i, bw, COMPAT_CV_BGR2GRAY);
         cv::threshold(bw, bw, threshold, 255, cv::THRESH_BINARY);
         black_and_white.push_back(bw);
     }
@@ -67,8 +68,8 @@ void filter(imlist to_filter, int size){
     for(imlist::iterator i = to_filter.begin(); i != to_filter.end(); i++){
         cv::Mat bw;
         //Opening and closing removes anything smaller than size
-        cv::morphologyEx(*i, bw, CV_MOP_OPEN, k);
-        cv::morphologyEx(bw, *i, CV_MOP_CLOSE, k);
+        cv::morphologyEx(*i, bw, COMPAT_CV_MORPH_TYPE_OPEN, k);
+        cv::morphologyEx(bw, *i, COMPAT_CV_MORPH_TYPE_CLOSE, k);
     }
 }
 

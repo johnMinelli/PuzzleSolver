@@ -1,8 +1,6 @@
 /*
  * params.cpp
  *
- *  Created on: Jan 5, 2019
- *      Author: kellinwood
  */
 
 #include "params.h"
@@ -20,11 +18,11 @@ void params::setSolving(bool solving) {
     this->solving = solving;
 }
     
-int params::getEstimatedPieceSize() const {
+uint params::getEstimatedPieceSize() const {
     return estimatedPieceSize;
 }
 
-void params::setEstimatedPieceSize(int estimatedPieceSize) {
+void params::setEstimatedPieceSize(uint estimatedPieceSize) {
     this->estimatedPieceSize = estimatedPieceSize;
 }
 
@@ -36,6 +34,14 @@ void params::setPieceOrder(std::string pieceOrder) {
     this->pieceOrder = pieceOrder;
 }
 
+uint params::getInitialPieceId() const {
+    return initialPieceId;
+}
+
+void params::setInitialPieceId(uint initialPieceId) {
+    this->initialPieceId = initialPieceId;
+}
+    
 void params::setSaveAll(bool saveAll)
 {
     this->saveAll = saveAll;
@@ -89,6 +95,14 @@ void params::setSavingEdges(bool savingEdges) {
     this->savingEdges = savingEdges;
 }
 
+bool params::isSavingMatches() const {
+    return savingMatches || saveAll;
+}
+
+void params::setSavingMatches(bool savingMatches) {
+    this->savingMatches = savingMatches;
+}
+
 std::string params::getInputDir() const {
     return inputDir;
 }
@@ -131,11 +145,11 @@ void params::setSolutionFileBasename(std::string solutionImageFilename) {
     this->solutionFileBasename = solutionImageFilename;
 }
 
-int params::getThreshold() const {
+uint params::getThreshold() const {
     return threshold;
 }
 
-void params::setThreshold(int threshold) {
+void params::setThreshold(uint threshold) {
     this->threshold = threshold;
 }
 
@@ -147,19 +161,27 @@ void params::setUsingMedianFilter(bool useMedianFilter) {
     this->useMedianFilter = useMedianFilter;
 }
 
-int params::getFindCornersBlockSize() const {
+uint params::getMedianBlurKSize() const {
+    return medianBlurKSize;
+}
+
+void params::setMedianBlurKSize(uint medianBlurKSize) {
+    this->medianBlurKSize = medianBlurKSize;
+}
+    
+uint params::getFindCornersBlockSize() const {
     return findCornersBlockSize;
 }
 
-void params::setFindCornersBlockSize(int findCornersBlockSize) {
+void params::setFindCornersBlockSize(uint findCornersBlockSize) {
     this->findCornersBlockSize = findCornersBlockSize;
 }
     
-int params::getMinCornersQuality() const {
+uint params::getMinCornersQuality() const {
     return minCornersQuality;
 }
 
-void params::setMinCornersQuality(int minCornersQuality) {
+void params::setMinCornersQuality(uint minCornersQuality) {
     this->minCornersQuality = minCornersQuality;
 }
 
@@ -188,6 +210,7 @@ void params::show() const {
     std::cout << "estimated piece size:    " << this->getEstimatedPieceSize() << std::endl;
     std::cout << "threshold:               " << this->getThreshold() << std::endl;
     std::cout << "median filter:           " << (this->isUsingMedianFilter() ? "true" : "false") << std::endl;
+    std::cout << "median blur ksize:       " << (this->getMedianBlurKSize()) << std::endl;
     std::cout << "piece order:             " << this->getPieceOrder() << std::endl;        
     std::cout << "partition factor:        " << this->getPartitionFactor() << std::endl;   
     std::cout << "find corners block size: " << this->getFindCornersBlockSize() << std::endl;
@@ -200,6 +223,7 @@ void params::show() const {
     std::cout << "save color images:       " << (this->isSavingColor() ? "true" : "false") << std::endl;        
     std::cout << "save corner images:      " << (this->isSavingCorners() ? "true" : "false") << std::endl;        
     std::cout << "save edge images:        " << (this->isSavingEdges() ? "true" : "false") << std::endl;      
+    std::cout << "save matched edges:      " << (this->isSavingMatches() ? "true" : "false") << std::endl;          
 }
 
 params::~params() {

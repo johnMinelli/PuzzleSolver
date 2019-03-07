@@ -17,7 +17,7 @@
 
 #include "edge.h"
 #include "utils.h"
-
+#include "compat_opencv.h"
 
 //This function takes in the beginning and ending of one vector, and returns
 //an iterator representing the point where the first item in the second vector is.
@@ -52,6 +52,9 @@ piece::piece(std::string id, cv::Mat color, cv::Mat black_and_white, params& _us
     process();
 }
 
+std::string piece::get_id() {
+    return id;
+}
 
 void piece::process(){
     find_corners();
@@ -173,12 +176,12 @@ void piece::find_corners(){
         
     }
     
-    
-    
+
+
     //Find the sub-pixel locations of the corners.
     cv::Size winSize = cv::Size( blockSize, blockSize );
     cv::Size zeroZone = cv::Size( -1, -1 );
-    cv::TermCriteria criteria = cv::TermCriteria( CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 40, 0.001 );
+    cv::TermCriteria criteria = cv::TermCriteria( COMPAT_CV_TERM_CRITERIA_EPS + COMPAT_CV_TERM_CRITERIA_MAX_ITER, 40, 0.001 );
     
     /// Calculate the refined corner locations
     cv::cornerSubPix( bw, corners, winSize, zeroZone, criteria );
@@ -201,7 +204,7 @@ void piece::find_corners(){
     if (user_params.isSavingCorners() || user_params.getMinCornersQuality() < cornersQuality) {
         cv::Mat corners_img = full_color.clone();
         for(uint i = 0; i < corners.size(); i++ ) {
-            circle( corners_img, corners[i],(int) corners.size(), cv::Scalar(0,0,255), -1, 8, 0 );
+            circle( corners_img, corners[i], corners_img.size().width / 50, cv::Scalar(0,0,255), 2, 8, 0 );
         }
         std::stringstream out_file_name;
         out_file_name << user_params.getOutputDir() << "corners_" << id << ".png";

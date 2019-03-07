@@ -55,21 +55,22 @@ puzzle::puzzle(params& _user_params) : user_params(_user_params) {
 
 
 void puzzle::print_edges(){
+    
+    cv::Scalar color = cv::Scalar(255);
+    
     for(uint i =0; i<pieces.size(); i++){
         for(int j=0; j<4; j++){
             cv::Mat m = cv::Mat::zeros(500, 500, CV_8UC1 );
 
-            std::vector<std::vector<cv::Point> > contours;
-            contours.push_back(pieces[i].edges[j].get_translated_contour(200, 0));
-            //This isn't used but the opencv function wants it anyways.
-            std::vector<cv::Vec4i> hierarchy;
+            std::vector<cv::Point> points = pieces[i].edges[j].get_translated_contour(200, 0);
 
-            cv::drawContours(m, contours, -1, cv::Scalar(255));
+            for (uint p = 0; p < points.size() -1 ; p++) {
+                cv::line(m, points[p], points[p+1], color);
+            }
+            putText(m, pieces[i].edges[j].edge_type_to_s(), cv::Point(300,300),
+                    cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, color, 1, cv::LINE_AA);
 
-            putText(m, pieces[i].edges[j].edge_type_to_s(), cvPoint(300,300),
-                    cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(255), 1, CV_AA);
-
-            write_debug_img(user_params, m, "edge", i, j);
+            write_debug_img(user_params, m, "edge", pieces[i].get_id(), std::to_string(j));
         }
     }
 }
@@ -93,14 +94,14 @@ std::vector<piece> puzzle::extract_pieces() {
 
     imlist bw;
     if(user_params.isUsingMedianFilter()){
-        imlist blured_images = median_blur(color_images, 5);
+        imlist blured_images = median_blur(color_images, user_params.getMedianBlurKSize());
         bw = color_to_bw(blured_images, user_params.getThreshold());
     } else{
         bw= color_to_bw(color_images, user_params.getThreshold());
         filter(bw,2);
     }
 
-    uint piece_count = 0;
+    uint unique_piece_id = user_params.getInitialPieceId();
     
 
     //For each input image
@@ -143,13 +144,14 @@ std::vector<piece> puzzle::extract_pieces() {
         
         if (user_params.isSavingContours()) {
             std::vector<std::vector<cv::Point> > contours_to_draw;
-            cv::Mat cmat = cv::Mat::zeros(bw[i].size().height, bw[i].size().width, CV_8UC3);            
+            cv::Mat cmat = cv::Mat::zeros(bw[i].size().height, bw[i].size().width, CV_8UC3);    
+            double font_scale = sqrt(bw[i].size().height * bw[i].size().width) / 1000;
             for (uint j = 0; j < contour_mgr.contours.size(); j++) {
                 cv::Rect bounds = contour_mgr.contours[j].bounds;
                 contours_to_draw.push_back(contour_mgr.contours[j].points);
                 // Text indicating contour order within the image
-                cv::putText(cmat, std::to_string(j+1), cv::Point2f(bounds.x+bounds.width/2-10.0,bounds.y+bounds.height/2),
-                        cv::FONT_HERSHEY_COMPLEX_SMALL, 1, cv::Scalar(0, 255, 255), 1, CV_AA);                
+                cv::putText(cmat, std::to_string(j+1), cv::Point2f(bounds.x+bounds.width/2-(10.0*font_scale),bounds.y+bounds.height/2+(10.0*font_scale)),
+                        cv::FONT_HERSHEY_COMPLEX_SMALL, font_scale, cv::Scalar(0, 255, 255), 1, cv::LINE_AA);                
             }
 
             cv::drawContours(cmat, contours_to_draw, -1, cv::Scalar(255,255,255), 2, 16);
@@ -160,11 +162,10 @@ std::vector<piece> puzzle::extract_pieces() {
             int bordersize = 15;
             std::stringstream idstream;
 
-            piece_count += 1;
             char id_buffer[80];
-
-            sprintf(id_buffer, "%03d-%03d-%04d", i+1, j+1, piece_count);
+            snprintf(id_buffer, 80, "%03d-%03d-%04d", i+1, j+1, unique_piece_id);
             std::string piece_id(id_buffer);
+            unique_piece_id += 1;
             
             cv::Rect bounds = contour_mgr.contours[j].bounds;
             std::vector<cv::Point> points = contour_mgr.contours[j].points;
@@ -172,7 +173,7 @@ std::vector<piece> puzzle::extract_pieces() {
             cv::Mat new_bw = cv::Mat::zeros(bounds.height+2*bordersize,bounds.width+2*bordersize,CV_8UC1);
             std::vector<std::vector<cv::Point> > contours_to_draw;
             contours_to_draw.push_back(translate_contour(points, bordersize-bounds.x, bordersize-bounds.y));
-            cv::drawContours(new_bw, contours_to_draw, -1, cv::Scalar(255), CV_FILLED);
+            cv::drawContours(new_bw, contours_to_draw, -1, cv::Scalar(255), cv::FILLED);
 
             if (user_params.isSavingBlackWhite()) {
                 write_debug_img(user_params, new_bw, "bw", piece_id);
@@ -234,33 +235,26 @@ void puzzle::solve(){
     std::vector<match_score>::iterator i= matches.begin();
     PuzzleDisjointSet p((int)pieces.size());
     
-  
-//You can save the individual pieces with their id numbers in the file name
-//If the following loop is uncommented.
-//    for(int i=0; i<pieces.size(); i++){
-//        std::stringstream filename;
-//        filename << "/tmp/final/p" << i << ".png";
-//        cv::imwrite(filename.str(), pieces[i].full_color);
-//    }
     
-//    int output_id=0;
+    int output_id=0;
     while(!p.in_one_set() && i!=matches.end() ){
         int p1 = i->edge1/4;
         int e1 = i->edge1%4;
         int p2 = i->edge2/4;
         int e2 = i->edge2%4;
         
-//Uncomment the following lines to spit out pictures of the matched edges...
-//        cv::Mat m = cv::Mat::zeros(500,500,CV_8UC1);
-//        std::stringstream out_file_name;
-//        out_file_name << "/tmp/final/match" << output_id++ << "_" << p1<< "_" << e1 << "_" <<p2 << "_" <<e2 << ".png";
-//        std::vector<std::vector<cv::Point> > contours;
-//        contours.push_back(pieces[p1].edges[e1].get_translated_contour(200, 0));
-//        contours.push_back(pieces[p2].edges[e2].get_translated_contour_reverse(200, 0));
-//        cv::drawContours(m, contours, -1, cv::Scalar(255));
-//        std::cout << out_file_name.str() << std::endl;
-//        cv::imwrite(out_file_name.str(), m);
-//        std::cout << "Attempting to merge: " << p1 << " with: " << p2 << " using edges:" << e1 << ", " << e2 << " c:" << i->score << " count: "  << output_id++ <<std::endl;
+        if (user_params.isSavingMatches()) {
+            cv::Mat m = cv::Mat::zeros(500,500,CV_8UC1);
+            std::stringstream out_file_name;
+            out_file_name << user_params.getOutputDir() << "match" << output_id++ << "-" << p1<< "-" << e1 << "-" <<p2 << "-" <<e2 << ".png";
+            std::vector<std::vector<cv::Point> > contours;
+            contours.push_back(pieces[p1].edges[e1].get_translated_contour(200, 0));
+            contours.push_back(pieces[p2].edges[e2].get_translated_contour_reverse(200, 0));
+            cv::drawContours(m, contours, -1, cv::Scalar(255));
+            std::cout << out_file_name.str() << std::endl;
+            cv::imwrite(out_file_name.str(), m);
+            std::cout << "Attempting to merge: " << p1 << " with: " << p2 << " using edges:" << e1 << ", " << e2 << " c:" << i->score << " count: "  << output_id++ <<std::endl;
+        }
         p.join_sets(p1, p2, e1, e2);
         i++;
     }
@@ -296,10 +290,11 @@ void puzzle::save_solution_text() {
     std::stringstream stream;
     
     int width = 2;
-    if (pieces.size() > 99) {
+    int max_id = pieces.size() + user_params.getInitialPieceId() -1;
+    if (max_id > 99) {
         width = 3;
     } 
-    else if (pieces.size() > 999) {
+    else if (max_id > 999) {
         width = 4;
     }
     
@@ -308,7 +303,7 @@ void puzzle::save_solution_text() {
         for(int col = 0; col < solution.cols; ++col) {
             int value = *p++;
             if (value >= 0) {
-                stream << std::setw(width) << (value + 1);
+                stream << std::setw(width) << (value + user_params.getInitialPieceId());
             }
             else {
                 stream << std::setw(width) << "";
@@ -390,28 +385,28 @@ void autocrop(cv::Mat& src, cv::Mat& dst)
 
     do {
         edge = src(cv::Rect(win.x, win.height-2, win.width, 1));
-        if (next = is_border(edge, color))
+        if ((next = is_border(edge, color)))
             win.height--;
     }
     while (next && win.height > 0);
 
     do {
         edge = src(cv::Rect(win.width-2, win.y, 1, win.height));
-        if (next = is_border(edge, color))
+        if ((next = is_border(edge, color)))
             win.width--;
     }
     while (next && win.width > 0);
 
     do {
         edge = src(cv::Rect(win.x, win.y, win.width, 1));
-        if (next = is_border(edge, color))
+        if ((next = is_border(edge, color)))
             win.y++, win.height--;
     }
     while (next && win.y <= src.rows);
 
     do {
         edge = src(cv::Rect(win.x, win.y, 1, win.height));
-        if (next = is_border(edge, color))
+        if ((next = is_border(edge, color)))
             win.x++, win.width--;
     }
     while (next && win.x <= src.cols);
@@ -512,23 +507,27 @@ void puzzle::save_solution_image(){
     
 }
 
+// Initial width, the window is resizable
+#define SOLUTION_WINDOW_WIDTH 768
 
 void puzzle::show_solution_image() {
     cv::Mat solution_image = cv::imread(get_solution_image_pathname());
 
     float aspect = (float)solution_image.size().width / solution_image.size().height;
     
-    int height = 1000 / aspect;
+    int height = SOLUTION_WINDOW_WIDTH / aspect;
     
     std::string window_name = "solution";
     cv::namedWindow(window_name, cv::WINDOW_NORMAL);
-    cv::resizeWindow(window_name, 1000, height);
+    cv::resizeWindow(window_name, SOLUTION_WINDOW_WIDTH, height);
 
     int rotation_code = 3; // 0 = 90, 1 = 180, 2 = 270, 3 = 0
     cv::Mat rotated;
     cv::imshow(window_name, solution_image);
     
-    std::cout << "Press the 'r' key one or more times to rotate the solution image" << std::endl;
+    std::cout << "With focus on the solution image window:" << std::endl;
+    std::cout << "    press the 'r' key one or more times to rotate the solution image by 90 degrees" << std::endl;
+    std::cout << "    press the 'q' to quit/exit" << std::endl;
     
     bool done = false;
     do {

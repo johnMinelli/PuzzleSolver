@@ -9,7 +9,7 @@ This is a program that uses computer vision techniques to solve jigsaw puzzles u
 OpenCV is required to run PuzzleSolver. This version compiles with OpenCV 3.x. Here is how I have done it on 2 different computers...
 
 ## OSX 
-Tested on High Sierra
+Tested on High Sierra with OpenCV 4.0.1
 ```
 # Install Homebrew if you haven't already. Visit https://brew.sh and install it
 
@@ -34,13 +34,8 @@ https://www.pyimagesearch.com/2018/05/28/ubuntu-18-04-how-to-install-opencv/
 
 On Linux or Mac run this from the PuzzleSolver source code directory:
 ```
+./configuure
 make
-```
-
-or
-
-```
-g++ -O3 `pkg-config --cflags opencv` -std=c++11 -o PuzzleSolver *.cpp `pkg-config --libs opencv`
 ```
 
 The result will be an executable called PuzzleSolver.  Run it with the `--help` option and the usage information will be written to the console.
@@ -54,10 +49,10 @@ PuzzleSolver can be used on all pieces of a puzzle or a subset of pieces (i.e., 
 3. Place as many puzzle pieces face-up on a flatbed scanner as will fit within the scan area, such that none of the pieces are touching the edges of the scan area, and not touching each other4.  Leave the scanner lid open and turn off the lights when scanning... a black background in the resulting images is ideal (consider making the scans at night if you can't get the room dark enough). Scan at 300dpi. Repeat until all puzzle pieces have been scanned once.
 5. Move the scanner images into a directory containing only the scanner images (this will be the "input directory").
 6. Run PuzzleSolver, giving it the name of the input directory and the name of an output directory.  The output directory will be created if it doesn't already exist. Do not use the same directory for input and output.
-7. If you get warnings about corner quality, or not enough corners detected for a piece, try re-running with different values for `--estimated-size`, `--threshold`, `--corners-blocksize`, and/or `--filter`.  If you use the `--edit-corners` option, a GUI will be displayed for each piece where the corners quality is higher than the minimum corners quality threshold (`--corners-quality`).  The GUI allows the piece corner locations to be adjusted manually.  Try to reduce the number of corner issues using other options first before using `--edit-corners`.
+7. If you get warnings about corner quality, or not enough corners detected for a piece, try re-running with different values for `--estimated-size`, `--threshold`, `--corners-blocksize`, `--median-blur-ksize`, and/or `--filter`.  If you use the `--edit-corners` option, a GUI will be displayed for each piece where the corners quality is higher than the minimum corners quality threshold (`--corners-quality`).  The GUI allows the piece corner locations to be adjusted manually.  Try to reduce the number of corner issues using other options first before using `--edit-corners`.
 8. For aditional troubleshooting, use the `--save-xxx` options to generate intermediate image files.
 9. When you are ready solve the puzzle, add the --solve option.
-10. Solutions are written to solution.txt, and if an image can be generated, solution.png.  The solution image will be displayed in a popup window if possible.  Press the 'r' key one or more times to rotate the image by 90 degrees each time.
+10. Solutions are written to solution.txt, and if an image can be generated, solution.png.  The solution image will be displayed in a popup window if possible.  Press the 'r' key one or more times to rotate the image by 90 degrees each time.  Press the 'q' key to quit.
 
 ## Tips
 

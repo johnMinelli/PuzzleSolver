@@ -1,14 +1,13 @@
 /*
  * params.hpp
  *
- *  Created on: Jan 5, 2019
- *      Author: kellinwood
  */
 
 #ifndef PARAMS_H_
 #define PARAMS_H_
 
 #include <string>
+#include <sys/types.h>
 
 class params {
 private:
@@ -18,11 +17,13 @@ private:
     std::string outputDir;
     std::string solutionFileBasename;
     std::string pieceOrder;
-    int estimatedPieceSize;
-    int threshold;
+    uint initialPieceId;
+    uint estimatedPieceSize;
+    uint threshold;
     bool useMedianFilter;
+    uint medianBlurKSize;
     float partitionFactor;
-    int minCornersQuality;
+    uint minCornersQuality;
     bool saveAll;
     bool savingOriginals;
     bool savingContours;
@@ -30,7 +31,8 @@ private:
     bool savingColor;
     bool savingCorners;
     bool savingEdges;
-    int findCornersBlockSize;
+    bool savingMatches;
+    uint findCornersBlockSize;
     bool editingCorners;
     float cornerEditorScale;
 
@@ -57,29 +59,37 @@ public:
 
     void setSolutionFileBasename(std::string solutionImageFilename);
     
+    uint getInitialPieceId() const;
+
+    void setInitialPieceId(uint initialPieceId);
+    
     std::string getPieceOrder() const;
 
     void setPieceOrder(std::string pieceOrder);
     
-    int getEstimatedPieceSize() const;
+    uint getEstimatedPieceSize() const;
 
-    void setEstimatedPieceSize(int estimatedPieceSize);
+    void setEstimatedPieceSize(uint estimatedPieceSize);
     
     float getPartitionFactor() const;
 
     void setPartitionFactor(float partitionFactor);
 
-    int getThreshold() const;
+    uint getThreshold() const;
 
-    void setThreshold(int threshold);
+    void setThreshold(uint threshold);
 
     bool isUsingMedianFilter() const;
 
     void setUsingMedianFilter(bool useMedianFilter);
     
-    int getMinCornersQuality() const;
+    uint getMedianBlurKSize() const;
 
-    void setMinCornersQuality(int minCornersQuality);
+    void setMedianBlurKSize(uint medianBlurKSize);
+
+    uint getMinCornersQuality() const;
+
+    void setMinCornersQuality(uint minCornersQuality);
 
     void setSaveAll(bool writeAll);
     
@@ -107,9 +117,13 @@ public:
 
     void setSavingEdges(bool savingEdges);    
     
-    int getFindCornersBlockSize() const;
+    bool isSavingMatches() const;
+    
+    void setSavingMatches(bool savingMatches);
 
-    void setFindCornersBlockSize(int findCornersBlockSize);
+    uint getFindCornersBlockSize() const;
+
+    void setFindCornersBlockSize(uint findCornersBlockSize);
     
     float getCornerEditorScale() const;
 
