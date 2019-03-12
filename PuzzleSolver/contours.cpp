@@ -5,8 +5,6 @@
  */
 #include "contours.h"
 
-#include <opencv2/core.hpp>
-
 
 piece_order::piece_order(std::string name, bool partition_rows, bool partition_order_asc, bool item_order_asc) :
         name(name), partition_rows(partition_rows), partitions_asc(partition_order_asc), items_asc(item_order_asc) {}

@@ -1,8 +1,7 @@
-AC_INIT([Puzzle Solver], 2019.0)
+AC_INIT([Puzzle Solver], 2019.1)
 AC_PREREQ(2.5)
  
 AM_INIT_AUTOMAKE(1.1)
-#AC_CONFIG_MACRO_DIR(m4)
  
 # This is a c++ project
 AC_PROG_CXX

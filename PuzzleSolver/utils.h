@@ -18,8 +18,7 @@
 #include <sstream>
 #include <dirent.h>
 #include <vector>
-#include "opencv2/core/mat.hpp"
-#include "opencv2/core/types.hpp"
+#include "compat_opencv.h"
 #include "params.h"
 typedef std::vector<cv::Mat> imlist;
 

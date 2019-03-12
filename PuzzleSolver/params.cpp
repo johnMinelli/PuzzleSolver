@@ -5,7 +5,7 @@
 
 #include "params.h"
 
-#include <iostream>
+#include <sstream>
 
 params::params() {
 }
@@ -201,33 +201,39 @@ void params::setEditingCorners(bool editingCorners) {
     this->editingCorners = editingCorners;
 }
 
-void params::show() const {
-    std::cout << "verbose:                 " << (isVerbose() ? "true" : "false") << std::endl;
-    std::cout << "input images dir:        " << this->getInputDir() << std::endl;
-    std::cout << "output dir:              " << this->getOutputDir() << std::endl;
-    std::cout << "solution name:           " << this->getSolutionFileBasename() << std::endl;
-    std::cout << "solve puzzle:            " << (this->isSolving() ? "true" : "false") << std::endl;    
-    std::cout << "estimated piece size:    " << this->getEstimatedPieceSize() << std::endl;
-    std::cout << "threshold:               " << this->getThreshold() << std::endl;
-    std::cout << "median filter:           " << (this->isUsingMedianFilter() ? "true" : "false") << std::endl;
-    std::cout << "median blur ksize:       " << (this->getMedianBlurKSize()) << std::endl;
-    std::cout << "piece order:             " << this->getPieceOrder() << std::endl;        
-    std::cout << "partition factor:        " << this->getPartitionFactor() << std::endl;   
-    std::cout << "find corners block size: " << this->getFindCornersBlockSize() << std::endl;
-    std::cout << "min corners quality:     " << this->getMinCornersQuality() << std::endl;
-    std::cout << "edit corners:            " << (this->isEditingCorners() ? "true" : "false") << std::endl;          
-    std::cout << "corner editor scale:     " << this->getCornerEditorScale() << std::endl;     
-    std::cout << "save original images:    " << (this->isSavingOriginals() ? "true" : "false") << std::endl;
-    std::cout << "save contour images:     " << (this->isSavingContours() ? "true" : "false") << std::endl;
-    std::cout << "save b&w images:         " << (this->isSavingBlackWhite() ? "true" : "false") << std::endl;    
-    std::cout << "save color images:       " << (this->isSavingColor() ? "true" : "false") << std::endl;        
-    std::cout << "save corner images:      " << (this->isSavingCorners() ? "true" : "false") << std::endl;        
-    std::cout << "save edge images:        " << (this->isSavingEdges() ? "true" : "false") << std::endl;      
-    std::cout << "save matched edges:      " << (this->isSavingMatches() ? "true" : "false") << std::endl;          
+inline const char * const bool_to_string(bool b)
+{
+  return b ? "true" : "false";
+}
+
+std::string params::to_string() const {
+    std::stringstream stream;
+    stream << "verbose ................ " << bool_to_string(this->isVerbose()) << std::endl;
+    stream << "input images dir ....... " << this->getInputDir() << std::endl;
+    stream << "output dir ............. " << this->getOutputDir() << std::endl;
+    stream << "solution name .......... " << this->getSolutionFileBasename() << std::endl;
+    stream << "solve puzzle ........... " << bool_to_string(this->isSolving()) << std::endl;    
+    stream << "estimated piece size ... " << this->getEstimatedPieceSize() << std::endl;
+    stream << "threshold .............. " << this->getThreshold() << std::endl;
+    stream << "median filter .......... " << bool_to_string(this->isUsingMedianFilter()) << std::endl;
+    stream << "median blur ksize ...... " << (this->getMedianBlurKSize()) << std::endl;
+    stream << "piece order ............ " << this->getPieceOrder() << std::endl;        
+    stream << "partition factor ....... " << this->getPartitionFactor() << std::endl;   
+    stream << "find corners block size  " << this->getFindCornersBlockSize() << std::endl;
+    stream << "min corners quality .... " << this->getMinCornersQuality() << std::endl;
+    stream << "edit corners ........... " << bool_to_string(this->isEditingCorners()) << std::endl;          
+    stream << "corner editor scale .... " << this->getCornerEditorScale() << std::endl;     
+    stream << "save original images ... " << bool_to_string(this->isSavingOriginals()) << std::endl;
+    stream << "save contour images .... " << bool_to_string(this->isSavingContours()) << std::endl;
+    stream << "save b&w images ........ " << bool_to_string(this->isSavingBlackWhite()) << std::endl;    
+    stream << "save color images ...... " << bool_to_string(this->isSavingColor()) << std::endl;        
+    stream << "save corner images ..... " << bool_to_string(this->isSavingCorners()) << std::endl;        
+    stream << "save edge images ....... " << bool_to_string(this->isSavingEdges()) << std::endl;      
+    stream << "save matched edges ..... " << bool_to_string(this->isSavingMatches()) << std::endl; 
+    return stream.str();
 }
 
 params::~params() {
-    // TODO Auto-generated destructor stub
 }
 
 

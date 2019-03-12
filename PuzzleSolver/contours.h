@@ -11,7 +11,7 @@
 
 #include <map>
 #include <vector>
-#include <opencv2/core/types.hpp>
+#include "compat_opencv.h"
 #include "params.h"
 
 // Associate names such as "lrtb" (left->right, top->bottom) with the parameters required to

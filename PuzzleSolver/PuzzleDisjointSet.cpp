@@ -10,7 +10,8 @@
 
 #include <algorithm>
 #include <ostream>
-#include "opencv2/core.hpp"
+#include "compat_opencv.h"
+ #include "logger.h"
 
 PuzzleDisjointSet::PuzzleDisjointSet(int number){
     set_count=0;
@@ -58,9 +59,9 @@ bool PuzzleDisjointSet::join_sets(int a, int b, int how_a, int how_b){
     
     //figure out the size of the new Mats
     loc_of_a = find_location(sets[rep_a].locations, a);
-    cv::MatSize size_of_a = sets[rep_a].locations.size;
+    COMPAT_CV_MAT_SIZE size_of_a = sets[rep_a].locations.size;
     loc_of_b = find_location(sets[rep_b].locations, b);
-    cv::MatSize size_of_b = sets[rep_b].locations.size;
+    COMPAT_CV_MAT_SIZE size_of_b = sets[rep_b].locations.size;
     
     int width = std::max(size_of_a[1], loc_of_a.x - loc_of_b.x +1 +size_of_b[1]) - std::min(0, loc_of_a.x-loc_of_b.x +1);
     int height = std::max(size_of_a[0], loc_of_a.y - loc_of_b.y +size_of_b[0]) - std::min(0, loc_of_a.y-loc_of_b.y);
@@ -119,6 +120,7 @@ bool PuzzleDisjointSet::join_sets(int a, int b, int how_a, int how_b){
 void PuzzleDisjointSet::finish() {
     if (merge_failures > 0) {
         std::cout << std::endl;
+        logger::stream() << "Failed to merge because of overlap (" << ++merge_failures << " times)" << std::endl; logger::flush();
     }
 }
 int PuzzleDisjointSet::find(int a){

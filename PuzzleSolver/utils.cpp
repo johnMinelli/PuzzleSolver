@@ -7,11 +7,11 @@
 //
 
 #include <math.h>
+#include <iomanip>
 #include "utils.h"
 
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/imgproc.hpp"
 #include "compat_opencv.h"
+#include "logger.h"
 
 
 void line(cv::Mat mat, std::vector<cv::Point> points, int index1, int index2, cv::Scalar color) {
@@ -29,7 +29,8 @@ imlist getImages(std::string path){
     std::vector<std::string> filenames;
     
     if (dp == NULL) {
-        std::cout << "Couldn't open the directory: " << path << std::endl;
+        logger::stream() << "Couldn't open the directory: " << path << std::endl; 
+        logger::flush();
         exit(1);        
     }
     
@@ -40,9 +41,18 @@ imlist getImages(std::string path){
     
     std::sort(filenames.begin(), filenames.end());
     
+    int id = 0;
     for (std::vector<std::string>::iterator i = filenames.begin(); i != filenames.end(); i++) {
-        cv::Mat image = cv::imread(*i);
-        if(image.data!=NULL) v.push_back(image);
+        std::string filename = *i;
+        cv::Mat image = cv::imread(filename);
+        if (image.data != NULL) {
+            id += 1;
+            logger::stream() << "Loaded " << filename << " as image " << std::setfill('0') << std::setw(3) << id << std::endl;
+            logger::flush();
+            v.push_back(image);
+        }
+
+        
     }
     
     return v;
@@ -134,7 +144,7 @@ std::vector<cv::Point> remove_duplicates(std::vector<cv::Point> vec){
 
 void write_img(params& user_params, cv::Mat& img, std::string filename) {
     if (user_params.isVerbose()) {
-        std::cout << "Writing " << filename << std::endl;
+        logger::stream() << "Writing " << filename << std::endl; logger::flush();
     }
     cv::imwrite(filename, img);
 }

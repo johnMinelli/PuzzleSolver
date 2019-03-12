@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-#include "opencv2/core/mat.hpp"
+#include "compat_opencv.h"
 
 #include "edge.h"
 #include "params.h"

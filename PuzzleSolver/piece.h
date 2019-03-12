@@ -11,9 +11,7 @@
 #include <iostream>
 
 #include <vector>
-#include "opencv2/core/mat.hpp"
-#include "opencv2/core/types.hpp"
-
+#include "compat_opencv.h"
 #include "edge.h"
 #include "params.h"
 
@@ -36,6 +34,10 @@ private:
     void extract_edges();
     void classify();
     params& user_params;
+    std::string corners_points_filename();
+    void save_corners_points();
+    bool load_corners_points();
+    void save_corners_image();
 public:
     cv::Mat full_color;
     cv::Mat bw;

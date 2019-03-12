@@ -11,13 +11,12 @@
 
 #include <cassert>
 #include <algorithm>
+#include <fstream>
 
-#include "opencv2/imgproc.hpp"
-#include "opencv2/imgcodecs.hpp"
-
+#include "compat_opencv.h"
 #include "edge.h"
 #include "utils.h"
-#include "compat_opencv.h"
+#include "logger.h"
 
 //This function takes in the beginning and ending of one vector, and returns
 //an iterator representing the point where the first item in the second vector is.
@@ -130,12 +129,74 @@ double compute_corners_quality(std::vector<cv::Point_<T>> corners) {
     return quality;
 }
 
+std::string piece::corners_points_filename() {
+    std::stringstream filename;
+    filename << user_params.getOutputDir() << "corners-" << id << ".dat";
+    return filename.str();
+}
 
+void piece::save_corners_points() {
+    std::string filename = corners_points_filename();
+    std::ofstream file;
+    file.open(filename);
+    if (file.fail()) {
+        logger::stream() << "Failed to write " << filename << std::endl; logger::flush();
+        return;
+    }
+        
+    for (std::vector<cv::Point2f>::iterator it = corners.begin(); it != corners.end(); it++) {
+        file << it->x << " " << it->y << std::endl;
+    }
+    file.close();    
+}
+
+bool piece::load_corners_points() {
+    std::string filename = corners_points_filename();
+    std::ifstream file;
+    file.open(filename);
+    if (!file.fail()) {
+        corners.clear();
+        for (int i = 0; i < 4 && !file.fail(); i++) {
+            float x;
+            float y;
+            file >> x;
+            file >> y;
+            corners.push_back(cv::Point2f(x,y));
+        }
+        bool failed = file.fail();
+        file.close();
+
+        if (failed) {
+            logger::stream() << "Failed to read " << filename << std::endl; logger::flush();
+            corners.clear();
+        } 
+        else {
+            return true;
+        }
+    }
+    return false;
+}
+
+void piece::save_corners_image() {
+    cv::Mat corners_img = full_color.clone();
+    for(uint i = 0; i < corners.size(); i++ ) {
+        circle( corners_img, corners[i], corners_img.size().width / 50, cv::Scalar(0,0,255), 2, 8, 0 );
+    }
+    std::stringstream out_file_name;
+    out_file_name << user_params.getOutputDir() << "corners-" << id << ".png";
+    cv::imwrite(out_file_name.str(), corners_img);    
+}
 
 //Gets the piece ready to use.
 //This code has been adapted from http://docs.opencv.org/doc/tutorials/features2d/trackingmotion/corner_subpixeles/corner_subpixeles.html
 void piece::find_corners(){
     
+    if (load_corners_points()) {
+        if (user_params.isSavingCorners()) {
+            save_corners_image();
+        }
+        return;
+    }
     
     //How close can 2 corners be?
     double minDistance = user_params.getEstimatedPieceSize();
@@ -185,35 +246,30 @@ void piece::find_corners(){
     
     /// Calculate the refined corner locations
     cv::cornerSubPix( bw, corners, winSize, zeroZone, criteria );
-    
+
     double cornersQuality = compute_corners_quality<float>(corners);
     if (cornersQuality > user_params.getMinCornersQuality()) {
-        std::cerr << "Warning: poor corners for piece " << id << ", quality: " << cornersQuality << std::endl;
+        logger::stream() << "Warning: poor corners for piece " << id << ", quality: " << cornersQuality << std::endl; logger::flush();
         
         if (user_params.isEditingCorners()) {
             std::vector<cv::Point2f> edited_corners;
             if (edit_corners(id, full_color, user_params.getCornerEditorScale(), corners, edited_corners, user_params.isVerbose())) {
                 corners = edited_corners;
                 cornersQuality = compute_corners_quality<float>(corners);
-                std::cerr << "New corner quality for piece " << id << ", quality: " << cornersQuality << std::endl;
+                logger::stream() << "New corner quality for piece " << id << ", quality: " << cornersQuality << std::endl; logger::flush();
+                save_corners_points();
             }
         }
     }
     
     //More debug stuff, this will mark the corners with a red circle and save the image
     if (user_params.isSavingCorners() || user_params.getMinCornersQuality() < cornersQuality) {
-        cv::Mat corners_img = full_color.clone();
-        for(uint i = 0; i < corners.size(); i++ ) {
-            circle( corners_img, corners[i], corners_img.size().width / 50, cv::Scalar(0,0,255), 2, 8, 0 );
-        }
-        std::stringstream out_file_name;
-        out_file_name << user_params.getOutputDir() << "corners_" << id << ".png";
-        cv::imwrite(out_file_name.str(), corners_img);
+        save_corners_image();
     }
     
 
     if (corners.size() < 4) {
-        std::cerr << "Only found " << corners.size() << " corners for piece " << id << std::endl;
+        logger::stream() << "Only found " << corners.size() << " corners for piece " << id << std::endl; logger::flush();
         exit(2);
     }
 }
@@ -229,7 +285,7 @@ void piece::extract_edges(){
     cv::findContours(bw.clone(), contours, hierarchy, cv::RETR_LIST, cv::CHAIN_APPROX_NONE);
     assert(corners.size() == 4);
     if( 1 != contours.size() ){
-        std::cerr << "Found incorrect number of contours (" << contours.size() << ") for piece" << id << std::endl;
+        logger::stream() << "Found incorrect number of contours (" << contours.size() << ") for piece" << id << std::endl; logger::flush();
         exit(3);
     }
     std::vector<cv::Point> contour = contours[0];
@@ -301,7 +357,7 @@ void piece::classify(){
     } else if (count == 2){
         type = CORNER;
     } else {
-        std::cerr << "Problem, found too many outer edges for piece" << id << std:: endl;
+        logger::stream() << "Problem, found too many outer edges for piece" << id << std:: endl; logger::flush();
         exit(4);
     }
 }

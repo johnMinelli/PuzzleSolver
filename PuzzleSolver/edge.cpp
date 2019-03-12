@@ -12,14 +12,14 @@
 
 #include <vector>
 #include <cmath>
-#include "opencv2/imgproc.hpp"
 
 #include "utils.h"
 
 edge::edge(std::vector<cv::Point> edge){
     //original
     contour = edge;
-    
+    arc_length = cv::arcLength(contour, false);
+    corner_distance = distance<int>(edge[0], edge[edge.size()-1]);
     //Normalized contours are used for comparisons
     normalized_contour = normalize(contour);
     std::vector<cv::Point> copy(contour.begin(),contour.end());
@@ -33,9 +33,9 @@ edge::edge(std::vector<cv::Point> edge){
 //Trying OpenCV's match shapes, hasn't worked as well as my compare2 function.
 double edge::compare(edge that){
     //Return large numbers if we know that these shapes simply wont match...
-    if(type == OUTER_EDGE || that.type == OUTER_EDGE) return 1000000;
-    if(type == that.type) return 10000000;
-    return cv::matchShapes(contour, that.contour, cv::CONTOURS_MATCH_I2, 0);
+    if(type == OUTER_EDGE || that.type == OUTER_EDGE) return DBL_MAX;
+    if(type == that.type) return DBL_MAX;
+    return cv::matchShapes(contour, that.contour, COMPAT_CV_CONTOURS_MATCH_I2, 0);
 }
 
 
@@ -44,10 +44,10 @@ double edge::compare(edge that){
 //The end result is the sum divided by length of the 2 contours
 double edge::compare2(edge that){
     //Return large number if an impossible situation is happening
-    if(type == OUTER_EDGE || that.type == OUTER_EDGE) return 100000000;
-    if(type == that.type) return 100000000;
+    if(type == OUTER_EDGE || that.type == OUTER_EDGE) return DBL_MAX;
+    if(type == that.type) return DBL_MAX;
     double cost=0;
-    double total_length =  cv::arcLength(normalized_contour, false) + cv::arcLength(that.reverse_normalized_contour, false);
+    double total_length =  this->arc_length + that.arc_length;
     
     for(std::vector<cv::Point2f>::iterator i = normalized_contour.begin(); i!=normalized_contour.end(); i++){
         double min = 10000000;
@@ -61,7 +61,32 @@ double edge::compare2(edge that){
     return cost/total_length;
 }
 
-
+//This comparison iterates over every point in "this" contour,
+//finds the closest point in "that" contour and sums those distances up.
+//It also adds in the squares of the difference in arc_lengths and corner-corner distances.
+double edge::compare3(edge that){
+    //Return large number if an impossible situation is happening
+    if(type == OUTER_EDGE || that.type == OUTER_EDGE) return DBL_MAX;
+    if(type == that.type) return DBL_MAX;
+    
+    double cost = 0;
+//    double arc_diff = this->arc_length - that.arc_length;
+//    cost = arc_diff * arc_diff;
+    
+    double corners_diff = this->corner_distance - that.corner_distance;
+    cost += (corners_diff * corners_diff);
+    
+    for(std::vector<cv::Point2f>::iterator i = normalized_contour.begin(); i!=normalized_contour.end(); i++){
+        double min = DBL_MAX;
+        for(std::vector<cv::Point2f>::iterator j = that.reverse_normalized_contour.begin(); j!=that.reverse_normalized_contour.end(); j++) {
+            double dist = distance<float>(*i,*j);
+            if(dist<min) min = dist;
+        }
+        
+        cost+=(min*min);
+    }
+    return cost;
+}
 
 void edge::classify(){
     

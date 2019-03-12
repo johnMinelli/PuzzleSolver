@@ -7,6 +7,7 @@
 //
 
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <string.h>
 #include <cassert>
@@ -16,6 +17,7 @@
 #include <libgen.h>
 
 #include "cxxopts.hpp"
+#include "logger.h"
 #include "params.h"
 #include "puzzle.h"
 #include "PuzzleDisjointSet.h"
@@ -195,13 +197,17 @@ int main(int argc, char * argv[])
     user_params.setSavingColor(result["save-color"].as<bool>());    
     user_params.setSavingCorners(result["save-corners"].as<bool>());    
     user_params.setSavingEdges(result["save-edges"].as<bool>());        
-    user_params.setSavingMatches(result["save-matches"].as<bool>());        
-    user_params.show();
+    user_params.setSavingMatches(result["save-matches"].as<bool>()); 
 
+      
     mkdir(user_params.getOutputDir().c_str(), 0775);
+    
+    std::stringstream logfilename;
+    logfilename << user_params.getOutputDir() << user_params.getSolutionFileBasename() << ".log";
+    logger::filename(logfilename.str());
 
-
-    std::cout << "Starting..." << std::endl;
+    logger::stream() << user_params.to_string() << std::endl; logger::flush();
+    logger::stream() << "Starting..." << std::endl; logger::flush();
     timeval time;
     gettimeofday(&time, NULL);
     long millis = (time.tv_sec * 1000) + (time.tv_usec / 1000);
@@ -211,7 +217,8 @@ int main(int argc, char * argv[])
     puzzle puzzle(user_params);
 
     gettimeofday(&time, NULL);
-    std::cout << std::endl << "time to initialize:"  << (((time.tv_sec * 1000) + (time.tv_usec / 1000))-inbetween_millis)/1000.0 << std::endl;
+    logger::stream() << std::endl << "time to initialize:"  << (((time.tv_sec * 1000) + (time.tv_usec / 1000))-inbetween_millis)/1000.0 << std::endl;
+    logger::flush();
     inbetween_millis = ((time.tv_sec * 1000) + (time.tv_usec / 1000));
     
     if (!user_params.isSolving()) {
@@ -220,16 +227,19 @@ int main(int argc, char * argv[])
     
     puzzle.solve();
     gettimeofday(&time, NULL);
-    std::cout << std::endl << "time to solve:"  << (((time.tv_sec * 1000) + (time.tv_usec / 1000))-inbetween_millis)/1000.0 << std::endl;
+    logger::stream() << std::endl << "time to solve:"  << (((time.tv_sec * 1000) + (time.tv_usec / 1000))-inbetween_millis)/1000.0 << std::endl;
+    logger::flush();
     inbetween_millis = ((time.tv_sec * 1000) + (time.tv_usec / 1000));
     puzzle.save_solution_text();
     puzzle.save_solution_image();
     gettimeofday(&time, NULL);
-    std::cout << std::endl << "Time to draw:"  << (((time.tv_sec * 1000) + (time.tv_usec / 1000))-inbetween_millis)/1000.0 << std::endl;
+    logger::stream() << std::endl << "Time to draw:"  << (((time.tv_sec * 1000) + (time.tv_usec / 1000))-inbetween_millis)/1000.0 << std::endl;
+    logger::flush();
     
     
     gettimeofday(&time, NULL);
-    std::cout << std::endl << "total time:"  << (((time.tv_sec * 1000) + (time.tv_usec / 1000))-millis)/1000.0 << std::endl;
+    logger::stream() << std::endl << "total time:"  << (((time.tv_sec * 1000) + (time.tv_usec / 1000))-millis)/1000.0 << std::endl;
+    logger::flush();
     
     puzzle.show_solution_image();
     

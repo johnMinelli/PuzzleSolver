@@ -133,7 +133,8 @@ public:
 
     void setEditingCorners(bool editingCorners);
     
-    void show() const;
+    std::string to_string() const;
+
     virtual ~params();
 
 

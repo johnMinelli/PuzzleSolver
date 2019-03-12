@@ -11,8 +11,7 @@
 
 #include <iostream>
 #include <vector>
-#include "opencv2/core/mat.hpp"
-#include "opencv2/core/types.hpp"
+#include "compat_opencv.h"
 
 class PuzzleDisjointSet{
 public:

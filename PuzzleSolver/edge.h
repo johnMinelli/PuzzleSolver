@@ -10,8 +10,7 @@
 #define __PuzzleSolver__edge__
 
 #include <iostream>
-#include "opencv2/core/types.hpp"
-
+#include "compat_opencv.h"
 
 enum edgeType { OUTER_EDGE, TAB, HOLE };
 
@@ -27,6 +26,8 @@ private:
     //to classify the piece.
     std::vector<cv::Point2f> normalized_contour;
     std::vector<cv::Point2f> reverse_normalized_contour;
+    double arc_length; // length of the edge contour
+    double corner_distance; // straight-line distance between start and end of edge contour
     template<class T> std::vector<cv::Point2f> normalize(std::vector<T>);
     void classify();
     edgeType type;
@@ -38,6 +39,7 @@ public:
     edgeType get_type();
     double compare(edge);
     double compare2(edge);
+    double compare3(edge);    
     std::string edge_type_to_s();
     
 };
