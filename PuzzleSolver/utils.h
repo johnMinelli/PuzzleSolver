@@ -65,6 +65,17 @@ double compute_angle(cv::Point_<T> a, cv::Point_<T> b, cv::Point_<T> c) {
     return 180.0 * acos(ab.ddot(bc) / (magnitude<T>(ab) * magnitude<T>(bc))) / M_PI;
 }
 
+// Given points, a, b, and c, compute the angle at b (in degrees). Returns a negative angle if a.x < b.x
+template <class T>
+double compute_rotation_angle(cv::Point_<T> a, cv::Point_<T> b, cv::Point_<T> c) {
+    
+    double angle = compute_angle(a,b,c);
+    if (a.x < b.x) {
+        return -angle;
+    }
+    return angle;
+}
+
 // Computes the angle in degrees at the point with the specified index
 template <class T>
 double compute_angle(std::vector<cv::Point_<T>> points, int index) {
@@ -91,18 +102,23 @@ imlist blur(imlist to_blur, int size, double sigma);
 imlist median_blur(imlist to_blur, int size);
 imlist bilateral_blur(imlist to_blur);
 
-template<class T> std::vector<cv::Point> translate_contour(std::vector<T> in , int offset_x, int offset_y);
+//template<class T> std::vector<cv::Point> translate_contour(std::vector<T> in , int offset_x, int offset_y);
 std::vector<cv::Point> remove_duplicates(std::vector<cv::Point> vec);
 //Return a contour that is translated
 template<class T>
-std::vector<cv::Point> translate_contour(std::vector<T> in , int offset_x, int offset_y){
-    std::vector<cv::Point> ret_contour;
+void translate_contour(std::vector<T> in, std::vector<cv::Point>& ret_contour, int offset_x, int offset_y, float scale = 1.0){
     cv::Point2f offset(offset_x,offset_y);
     for(uint i = 0; i<in.size(); i++){
-        int x = (int)(in[i].x+offset_x+0.5);
-        int y = (int)(in[i].y+offset_y+0.5);
-        ret_contour.push_back(T(x,y));
+        int x = (int)((in[i].x+offset_x)*scale+0.5);
+        int y = (int)((in[i].y+offset_y)*scale+0.5);
+        ret_contour.push_back(cv::Point(x,y));
     }
+}
+//Return a contour that is translated
+template<class T>
+std::vector<cv::Point> translate_contour(std::vector<T> in , int offset_x, int offset_y, float scale = 1.0){
+    std::vector<cv::Point> ret_contour;
+    translate_contour(in, ret_contour, offset_x, offset_y, scale);
     return ret_contour;
 }
 

@@ -29,6 +29,9 @@ edge::edge(std::vector<cv::Point> edge){
     classify();
 }
 
+std::vector<cv::Point> edge::get_contour() {
+    return contour;
+}
 
 //Trying OpenCV's match shapes, hasn't worked as well as my compare2 function.
 double edge::compare(edge that){
@@ -74,7 +77,8 @@ double edge::compare3(edge that){
 //    cost = arc_diff * arc_diff;
     
     double corners_diff = this->corner_distance - that.corner_distance;
-    cost += (corners_diff * corners_diff);
+    corners_diff *= corners_diff;
+    cost += corners_diff;
     
     for(std::vector<cv::Point2f>::iterator i = normalized_contour.begin(); i!=normalized_contour.end(); i++){
         double min = DBL_MAX;
@@ -83,7 +87,7 @@ double edge::compare3(edge that){
             if(dist<min) min = dist;
         }
         
-        cost+=(min*min);
+        cost+=min;//(min*min);
     }
     return cost;
 }

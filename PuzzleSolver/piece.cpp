@@ -7,7 +7,7 @@
 //
 
 #include "piece.h"
-#include "edit_corners.h"
+#include "adjust_corners.h"
 
 #include <cassert>
 #include <algorithm>
@@ -204,26 +204,26 @@ void piece::find_corners(){
     int blockSize = user_params.getFindCornersBlockSize();
     bool useHarrisDetector = true;
     double k = 0.04;
-    
+
     double min =0;
     double max =1;
     int max_iterations = 100;
     bool found_all_corners = false;
-    
+
     //Binary search, altering quality until exactly 4 corners are found.
     //Usually done in 1 or 2 iterations
     while(0<max_iterations--){
         corners.clear();
         double qualityLevel = (min+max)/2;
         cv::goodFeaturesToTrack(bw.clone(),
-                                corners,
-                                100,
-                                qualityLevel,
-                                minDistance,
-                                cv::Mat(),
-                                blockSize,
-                                useHarrisDetector,
-                                k);
+                corners,
+                100,
+                qualityLevel,
+                minDistance,
+                cv::Mat(),
+                blockSize,
+                useHarrisDetector,
+                k);
         if(corners.size() > 4){
             //Found too many corners increase quality
             min = qualityLevel;
@@ -234,26 +234,24 @@ void piece::find_corners(){
             found_all_corners = true;
             break;
         }
-        
-    }
-    
 
+    }
 
     //Find the sub-pixel locations of the corners.
     cv::Size winSize = cv::Size( blockSize, blockSize );
     cv::Size zeroZone = cv::Size( -1, -1 );
     cv::TermCriteria criteria = cv::TermCriteria( COMPAT_CV_TERM_CRITERIA_EPS + COMPAT_CV_TERM_CRITERIA_MAX_ITER, 40, 0.001 );
-    
+
     /// Calculate the refined corner locations
     cv::cornerSubPix( bw, corners, winSize, zeroZone, criteria );
-
+    
     double cornersQuality = compute_corners_quality<float>(corners);
     if (cornersQuality > user_params.getMinCornersQuality()) {
         logger::stream() << "Warning: poor corners for piece " << id << ", quality: " << cornersQuality << std::endl; logger::flush();
         
-        if (user_params.isEditingCorners()) {
+        if (user_params.isAdjustingCorners()) {
             std::vector<cv::Point2f> edited_corners;
-            if (edit_corners(id, full_color, user_params.getCornerEditorScale(), corners, edited_corners, user_params.isVerbose())) {
+            if (adjust_corners(id, full_color, user_params.getGuiScale(), corners, edited_corners, user_params.isVerbose())) {
                 corners = edited_corners;
                 cornersQuality = compute_corners_quality<float>(corners);
                 logger::stream() << "New corner quality for piece " << id << ", quality: " << cornersQuality << std::endl; logger::flush();
@@ -262,8 +260,8 @@ void piece::find_corners(){
         }
     }
     
-    //More debug stuff, this will mark the corners with a red circle and save the image
-    if (user_params.isSavingCorners() || user_params.getMinCornersQuality() < cornersQuality) {
+    // More debug stuff, this will mark the corners with a red circle and save the image
+    if (user_params.isSavingCorners() /* || user_params.getMinCornersQuality() < cornersQuality */) {
         save_corners_image();
     }
     

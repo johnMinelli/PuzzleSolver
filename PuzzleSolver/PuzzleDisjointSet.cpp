@@ -10,16 +10,23 @@
 
 #include <algorithm>
 #include <ostream>
-#include "compat_opencv.h"
- #include "logger.h"
+#include <iomanip>
+#include <ctime>
 
-PuzzleDisjointSet::PuzzleDisjointSet(int number){
+#include "compat_opencv.h"
+#include "logger.h"
+
+PuzzleDisjointSet::PuzzleDisjointSet(puzzle* p, params& user_params, int number) : p(p), user_params(user_params) {
     set_count=0;
     merge_failures = 0;
     for(int i=0; i<number; i++){
         make_set(i);
     }
 
+}
+
+puzzle* PuzzleDisjointSet::get_puzzle() {
+    return p;
 }
 
 void PuzzleDisjointSet::make_set(int new_id){
@@ -49,7 +56,7 @@ bool PuzzleDisjointSet::join_sets(int a, int b, int how_a, int how_b){
     int to_rot_a = (6 - how_a - rot_a)%4;
     rotate_ccw(rep_a, to_rot_a);
     
-    //We need B to have its adjoinign edge to the left, position 0
+    //We need B to have its adjoining edge to the left, position 0
     //if its position was 0, 
     cv::Point loc_of_b = find_location(sets[rep_b].locations, b);
     int rot_b = sets[rep_b].rotations(loc_of_b);
@@ -91,8 +98,11 @@ bool PuzzleDisjointSet::join_sets(int a, int b, int how_a, int how_b){
     for(int i = 0; i<new_a_locs.size[0]; i++){
         for(int j=0; j<new_a_locs.size[1]; j++){
             //If both have a real value for a piece, it becomes impossible, reject
-            if(new_a_locs(i,j) != -1 && new_b_locs(i,j)!= -1){
-                std::cout << "Failed to merge because of overlap (x" << ++merge_failures << ")\r" << std::flush;
+            if(new_a_locs(i,j) != -1 && new_b_locs(i,j)!= -1) {
+                if (user_params.isVerbose()) {
+                    logger::stream() << "Failed to merge because of overlap" << std::endl; logger::flush();
+                    merge_failures++;
+                }
                 return false;
             }
             
@@ -104,7 +114,10 @@ bool PuzzleDisjointSet::join_sets(int a, int b, int how_a, int how_b){
         }
     }
 
-
+    if (!get_puzzle()->guide_match(a, b, how_a, how_b)) {
+        return false;
+    }
+    
     //Set the new representative a, to have this Mat
     sets[rep_a].locations = new_a_locs;
     sets[rep_a].rotations = new_a_rots;

@@ -23,6 +23,7 @@
 #include "utils.h"
 #include "contours.h"
 #include "logger.h"
+#include "guided_match.h"
 
 typedef std::vector<cv::Mat> imlist;
 
@@ -74,14 +75,6 @@ void puzzle::print_edges(){
     }
 }
 
-// value at index
-template <class T>
-class vai {
-public:
-    int index;
-    T value;
-    vai(int _index, T _value) : index(_index), value(_value) {}
-};
 
 std::vector<piece> puzzle::extract_pieces() {
     std::vector<piece> pieces;
@@ -200,7 +193,7 @@ std::vector<piece> puzzle::extract_pieces() {
             cv::Rect b2(bounds.x-3, bounds.y-3, bounds.width+6, bounds.height+6);
             cv::Mat color_roi = color_images[i](b2);
             cv::Mat mini_color = cv::Mat::zeros(bounds.height+2*bordersize,bounds.width+2*bordersize,CV_8UC3);
-            color_roi.copyTo(mini_color(cv::Rect(bordersize,bordersize,b2.width,b2.height)));
+            color_roi.copyTo(mini_color(cv::Rect(bordersize-3,bordersize-3,b2.width,b2.height)));
             
             if (user_params.isSavingColor()) {
                 write_debug_img(user_params, mini_color, "color", piece_id);
@@ -248,11 +241,13 @@ void puzzle::fill_costs(){
 //Solves the puzzle
 void puzzle::solve(){
     
+    load_guided_matches();
+    
     logger::stream() << "Finding edge costs..." << std::endl;
     logger::flush();
     fill_costs();
     std::vector<match_score>::iterator i= matches.begin();
-    PuzzleDisjointSet p((int)pieces.size());
+    PuzzleDisjointSet p(this, user_params, (int)pieces.size());
     
     
     int output_id=0;
@@ -273,8 +268,8 @@ void puzzle::solve(){
             cv::imwrite(out_file_name.str(), m);
         }
         if (user_params.isVerbose()) {
-            logger::stream() << "Attempting to merge: " << pieces[p1].get_id() << "-" << e1 << " with: " << 
-                    pieces[p2].get_id() << "-" << e2 << ", score:" << i->score << " count: "  << output_id <<std::endl;
+            logger::stream() << "Attempting to merge: " << pieces[p1].get_id() << "-" << (e1+1) << " with: " << 
+                    pieces[p2].get_id() << "-" << (e2+1) << ", score:" << i->score << " count: "  << output_id <<std::endl;
             logger::flush();
         }
         p.join_sets(p1, p2, e1, e2);
@@ -296,13 +291,101 @@ void puzzle::solve(){
                 int piece_number = solution(i,j);
                 pieces[piece_number].rotate(4-solution_rotations(i,j));
             }
+        }   
+    }
+}
+
+std::string get_guided_matches_filename(params& user_params) {
+    std::stringstream fnstream;
+    fnstream << user_params.getOutputDir() << "guided-matches.dat";
+    return fnstream.str();    
+}
+
+void puzzle::load_guided_matches() {
+    std::string filename = get_guided_matches_filename(user_params);
+    std::ifstream istream;
+    istream.open(filename, std::ifstream::in);
+    if (istream.fail()) {
+        return;
+    }
+
+    std::string dateField;
+    std::string isMatchField;
+    std::string piecePairId;
+    
+    while (true) {
+
+        istream >> dateField;
+        istream >> isMatchField;
+        istream >> piecePairId;
+        if (istream.eof()) {
+            break;
         }
         
-        
+        guided_matches[piecePairId] = isMatchField;
     }
     
+    istream.close();
+}
+
+// Returns a string identifying the piece-edge paring
+std::string get_match_id(int initial_piece_id, int p1, int p2, int e1, int e2) {
+    // Create the ID with the lower value piece number appearing first.
+    int id_p1;
+    int id_e1;
+    int id_p2;
+    int id_e2;
     
+    if (p1 < p2) {
+        id_p1 = p1 + initial_piece_id;
+        id_e1 = (e1+1);
+        id_p2 = p2 + initial_piece_id;
+        id_e2 = (e2+1);
+    } else {
+        id_p1 = p2 + initial_piece_id; 
+        id_e1 = (e2+1);
+        id_p2 = p1 + initial_piece_id;
+        id_e2 = (e1+1);                
+    }
+
+    std::stringstream idstream;
+    idstream << id_p1 << "-" << id_e1 << "-" << id_p2 << "-" << id_e2;
+    return idstream.str();    
+}
+
+bool puzzle::guide_match(int p1, int p2, int e1, int e2) {
     
+    std::string id = get_match_id(user_params.getInitialPieceId(), p1, p2, e1, e2);
+    
+    std::map<std::string,std::string>::iterator it = guided_matches.find(id);
+    if (it != guided_matches.end()) {
+        return (it->second == "yes");
+    }
+    
+    if (!user_params.isGuidedSolution()) {
+        return true;  // true results in the default automatic solution behavior
+    }
+    
+    std::cout << "Does piece " << (p1 + user_params.getInitialPieceId()) << " fit to " << (p2 + user_params.getInitialPieceId()) << " ?" << std::flush;
+    
+    std::string response = guided_match(pieces[p1], pieces[p2], e1, e2, user_params);
+    std::cout << "Guided match " << response << std::endl;
+    
+    bool match = (response == "yes");
+
+    std::string filename = get_guided_matches_filename(user_params);
+    std::ofstream ostream;
+    ostream.open(filename, std::ofstream::out | std::ofstream::app);
+    if (ostream.fail()) {
+        std::cerr << "Failed to open " << filename << " for writing" << std::endl;
+        exit(1);
+    }
+    
+    std::time_t time = std::time(NULL);
+    std::tm tm = *std::localtime(&time);
+    ostream << std::put_time(&tm, "%a_%F_%T") << (match ? " yes " : "  no ") << id << "\n" << std::flush;
+    ostream.close();
+    return match;
 }
 
 // Generates and displays the solution as text (grid of piece IDs).  The text is also saved to 
@@ -457,7 +540,7 @@ void puzzle::save_solution_image(){
     for(int i=0; i<solution.size[0];i++){
         for(int j=0; j<solution.size[1]; j++){
             int piece_number = solution(i,j);
-            logger::stream() << std::setw(2) << "." << std::flush; logger::flush();
+            logger::stream() << std::setfill(' ') << std::setw(2) << "." << std::flush; logger::flush();
 
             if(piece_number ==-1){
                 failed = true;
@@ -530,6 +613,7 @@ void puzzle::save_solution_image(){
 }
 
 #if OPENCV_VERSION_MAJOR == 2
+// Mimic cv::rotate(src,dest,rotation_code) which is available starting in OpenCV 3.x 
 void cv_rotate(const cv::Mat& image, cv::Mat& dest, int rotation_code)
 {
   switch (rotation_code) {

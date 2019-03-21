@@ -1,6 +1,6 @@
 #include "opencv2/opencv.hpp"
 
-#include "edit_corners.h"
+#include "adjust_corners.h"
 
 #define DEFAULT_SCALE_FACTOR 3.0f
 #define UNSCALED_CIRCLE_SIZE 4
@@ -16,6 +16,7 @@ public:
     std::vector<cv::Point2f>& edited_corners;
     bool verbose;
     
+    cv::Mat& image;
     cv::Mat resized;
     cv::Mat rendered;
     std::vector<cv::Point2f> scaled_corners;
@@ -25,23 +26,24 @@ public:
 
     
     corner_editor(std::string& window_name, cv::Mat& image, float scale_factor, std::vector<cv::Point2f>& original_corners, std::vector<cv::Point2f>& edited_corners, bool verbose) :
-        window_name(window_name), scale_factor(scale_factor), original_corners(original_corners), edited_corners(edited_corners), verbose(verbose) 
+        image(image), window_name(window_name), scale_factor(scale_factor), original_corners(original_corners), edited_corners(edited_corners), verbose(verbose) 
     {
-        circle_size = image.size().width * scale_factor / 50;
         corner_index = -1;
         edited = false;
-        
-        cv::resize(image, resized, cv::Size(), scale_factor, scale_factor, cv::INTER_CUBIC);
-        rendered = resized.clone();
-
-        init_scaled_corners();
+       
+        init_scaled_corners(original_corners);
     }
     
 
-    void init_scaled_corners() {
+    void init_scaled_corners(std::vector<cv::Point2f>& corners) {
+        circle_size = image.size().width * scale_factor / 50;
+
+        cv::resize(image, resized, cv::Size(), scale_factor, scale_factor, cv::INTER_CUBIC);
+        rendered = resized.clone();
+        
         scaled_corners.clear();
-        for (uint i = 0; i < std::min((size_t)4, original_corners.size()); i++) {
-            scaled_corners.push_back( original_corners[i] * scale_factor);
+        for (uint i = 0; i < std::min((size_t)4, corners.size()); i++) {
+            scaled_corners.push_back( corners[i] * scale_factor);
         }
         
         // If original_corners was short, add new ones
@@ -56,6 +58,25 @@ public:
         }        
     }
 
+    void adjust_scale( float adjustment) {
+        float new_scale =  scale_factor + adjustment;
+        if (new_scale < 0.25) {
+            new_scale = 0.25;
+        }
+        if (new_scale == scale_factor) {
+            return;
+        }
+        
+        std::vector<cv::Point2f> corners;
+        for (uint i = 0; i < scaled_corners.size(); i++) {
+            corners.push_back(scaled_corners[i] / scale_factor);
+        }
+        scale_factor = new_scale;
+        init_scaled_corners(corners);
+        render_circles();   
+        std::cout << "Scale factor is now " << scale_factor << std::endl;
+    }
+    
     bool edit() {
 
         render_circles();
@@ -67,18 +88,26 @@ public:
         bool done = false;
         do {
             int c = cv::waitKey(0);
+            // std::cout << c << std::endl;
             switch (c) {
                 case -1:  // User probably clicked on the "x" in the window title bar
-                case 13:  // Enter key
+                case 13:  // Return key
+                case 141: // Enter key
                 case 'n': // "next"
-                case 'q': // "quit"
                     done = true;
                     break;
-                case 'r':
+                case 'r': // "reset"
                     if (corner_index == -1) {
                         reset_circles();
                     }
                     break;
+                case '-':
+                    adjust_scale(-0.25);
+                    break;
+                case '+':
+                case '=':
+                    adjust_scale(0.25);
+                    break;                    
                 default:
                     break;
             }
@@ -94,14 +123,15 @@ public:
         if (edited) {
             edited_corners.clear();
             for (uint i = 0; i < 4; i++) {
-                edited_corners.push_back(cv::Point2f(scaled_corners[i].x / scale_factor, scaled_corners[i].y / scale_factor));
+                edited_corners.push_back(scaled_corners[i] / scale_factor);
             }
         }
         return edited;
     }
     
     void reset_circles() {
-        init_scaled_corners();
+        edited = false;
+        init_scaled_corners(original_corners);
         render_circles();
     }
     
@@ -174,7 +204,7 @@ void ce_mouse_callback(int event, int x, int y, int flags, void* userdata) {
 }
 
 
-bool edit_corners(std::string& window_name, cv::Mat& image, float scale_factor, std::vector<cv::Point2f>& original_corners, std::vector<cv::Point2f>& edited_corners, bool verbose)
+bool adjust_corners(std::string& window_name, cv::Mat& image, float scale_factor, std::vector<cv::Point2f>& original_corners, std::vector<cv::Point2f>& edited_corners, bool verbose)
 {
     corner_editor editor(window_name, image, scale_factor, original_corners, edited_corners, verbose);
     return editor.edit();

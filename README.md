@@ -11,12 +11,17 @@ OpenCV is required to run PuzzleSolver. This version compiles with OpenCV 3.x. H
 ## OSX 
 Tested on High Sierra with OpenCV 4.0.1
 ```
-# Install Homebrew if you haven't already. Visit https://brew.sh and install it
+### Install Homebrew if you haven't already. Visit https://brew.sh and install it
 
-# Install opencv
+### Install opencv
 brew install opencv libomp
 ```
 
+### Running on OSX
+For some reason I have to set DYLD_FALLBACK_LIBRARY_PATH or PuzzleSolver fails to execute due to unresolved library issues.
+```
+DYLD_FALLBACK_LIBRARY_PATH=/usr/local/opt/lib ./PuzzleSolver ...
+```
 ## Linux
 Tested on Ubuntu 18.04
 ### Via apt-get
@@ -34,11 +39,17 @@ https://www.pyimagesearch.com/2018/05/28/ubuntu-18-04-how-to-install-opencv/
 
 On Linux or Mac run this from the PuzzleSolver source code directory:
 ```
-./configuure
-make
+./build.sh
 ```
 
 The result will be an executable called PuzzleSolver.  Run it with the `--help` option and the usage information will be written to the console.
+
+## Enable source-level debugging
+
+```
+./configure CXXOPTS="-g -O0"
+make clean && make
+```
 
 # Using PuzzleSolver
 

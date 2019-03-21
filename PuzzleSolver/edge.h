@@ -34,6 +34,7 @@ private:
 public:
     edge();
     edge(std::vector<cv::Point> edge);
+    std::vector<cv::Point> get_contour();
     std::vector<cv::Point> get_translated_contour(int,int);
     std::vector<cv::Point> get_translated_contour_reverse(int,int);
     edgeType get_type();

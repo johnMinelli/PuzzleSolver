@@ -12,6 +12,7 @@
 class params {
 private:
     bool solving;
+    bool guidedSolution;
     bool verbose;
     std::string inputDir;
     std::string outputDir;
@@ -34,7 +35,7 @@ private:
     bool savingMatches;
     uint findCornersBlockSize;
     bool editingCorners;
-    float cornerEditorScale;
+    float guiScale;
 
 public:
     params();
@@ -43,6 +44,10 @@ public:
 
     void setSolving(bool solving);
     
+    bool isGuidedSolution() const;
+
+    void setGuidedSolution(bool guidedSolution);
+
     bool isVerbose() const;
 
     void setVerbose(bool Verbose);    
@@ -125,13 +130,13 @@ public:
 
     void setFindCornersBlockSize(uint findCornersBlockSize);
     
-    float getCornerEditorScale() const;
+    float getGuiScale() const;
 
-    void setCornerEditorScale(float cornerEditorScale);
+    void setGuiScale(float cornerEditorScale);
 
-    bool isEditingCorners() const;
+    bool isAdjustingCorners() const;
 
-    void setEditingCorners(bool editingCorners);
+    void setAdjustingCorners(bool editingCorners);
     
     std::string to_string() const;
 

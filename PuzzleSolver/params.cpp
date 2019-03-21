@@ -18,6 +18,14 @@ void params::setSolving(bool solving) {
     this->solving = solving;
 }
     
+bool params::isGuidedSolution() const {
+    return guidedSolution;
+}
+
+void params::setGuidedSolution(bool guidedSolution) {
+    this->guidedSolution = guidedSolution;
+}
+
 uint params::getEstimatedPieceSize() const {
     return estimatedPieceSize;
 }
@@ -185,19 +193,19 @@ void params::setMinCornersQuality(uint minCornersQuality) {
     this->minCornersQuality = minCornersQuality;
 }
 
-float params::getCornerEditorScale() const {
-    return cornerEditorScale;
+float params::getGuiScale() const {
+    return guiScale;
 }
 
-void params::setCornerEditorScale(float cornerEditorScale) {
-    this->cornerEditorScale = cornerEditorScale;
+void params::setGuiScale(float cornerEditorScale) {
+    this->guiScale = cornerEditorScale;
 }
 
-bool params::isEditingCorners() const {
+bool params::isAdjustingCorners() const {
     return editingCorners;
 }
 
-void params::setEditingCorners(bool editingCorners) {
+void params::setAdjustingCorners(bool editingCorners) {
     this->editingCorners = editingCorners;
 }
 
@@ -213,6 +221,7 @@ std::string params::to_string() const {
     stream << "output dir ............. " << this->getOutputDir() << std::endl;
     stream << "solution name .......... " << this->getSolutionFileBasename() << std::endl;
     stream << "solve puzzle ........... " << bool_to_string(this->isSolving()) << std::endl;    
+    stream << "guided solution mode ... " << bool_to_string(this->isGuidedSolution()) << std::endl;        
     stream << "estimated piece size ... " << this->getEstimatedPieceSize() << std::endl;
     stream << "threshold .............. " << this->getThreshold() << std::endl;
     stream << "median filter .......... " << bool_to_string(this->isUsingMedianFilter()) << std::endl;
@@ -221,8 +230,8 @@ std::string params::to_string() const {
     stream << "partition factor ....... " << this->getPartitionFactor() << std::endl;   
     stream << "find corners block size  " << this->getFindCornersBlockSize() << std::endl;
     stream << "min corners quality .... " << this->getMinCornersQuality() << std::endl;
-    stream << "edit corners ........... " << bool_to_string(this->isEditingCorners()) << std::endl;          
-    stream << "corner editor scale .... " << this->getCornerEditorScale() << std::endl;     
+    stream << "adjust corners ......... " << bool_to_string(this->isAdjustingCorners()) << std::endl;          
+    stream << "corner adjuster scale .. " << this->getGuiScale() << std::endl;     
     stream << "save original images ... " << bool_to_string(this->isSavingOriginals()) << std::endl;
     stream << "save contour images .... " << bool_to_string(this->isSavingContours()) << std::endl;
     stream << "save b&w images ........ " << bool_to_string(this->isSavingBlackWhite()) << std::endl;    

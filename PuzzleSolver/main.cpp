@@ -57,6 +57,7 @@ void demo_help(std::map<std::string,demo*> &demos)
         std::cout << std::setw(24) << std::left << d->name << " : " << d->comment << std::endl;
     }
 }
+
 int main(int argc, char * argv[])
 {
     params user_params;
@@ -75,8 +76,9 @@ int main(int argc, char * argv[])
       ("v,verbose", "Verbose output", cxxopts::value<bool>()->default_value("false"))
       ("h,help", "Display this help message")
       ("s,solve", "Solve the puzzle after processing the input images and extracting pieces and edges", cxxopts::value<bool>()->default_value("false"))
+      ("g,guided", "Enable interactive solution mode", cxxopts::value<bool>()->default_value("false"))            
       ("dont-solve", "Skip finding the solution (e.g., for a demo which normally implies --solve)", cxxopts::value<bool>()->default_value("false"))
-      ("n,solution-name", "Basename for solution text/image files written to the output directory", cxxopts::value<std::string>()->default_value("solution"))      
+      ("n,solution-name", "Basename for solution text/image/log files written to the output directory", cxxopts::value<std::string>()->default_value("solution"))      
       ("e,estimated-size", "Estimated piece size", cxxopts::value<uint>()->default_value("200"))
       ("t,threshold", "Threshold value used when converting color images to b&w.  Min: 0, max: 255.", cxxopts::value<uint>()->default_value("30"))
       ("f,filter", "Use filter() instead of median_filter()", cxxopts::value<bool>()->default_value("false"))
@@ -86,8 +88,8 @@ int main(int argc, char * argv[])
       ("p,partition", "Piece-ordering partition factor for adjusting behavior of --order", cxxopts::value<float>()->default_value("1.0"))                
       ("b,corners-blocksize", "Block size to use when finding corners", cxxopts::value<uint>()->default_value("25"))            
       ("c,corners-quality", "Corner quality warning threshold", cxxopts::value<uint>()->default_value("300"))              
-      ("g,edit-corners","Show GUI corner editor for each piece where its corner quality exceeds the corners quality threshold", cxxopts::value<bool>()->default_value("false"))
-      ("corner-edit-scale","Scale factor for images shown in the corner editor",  cxxopts::value<float>()->default_value("1.0"))
+      ("a,adjust-corners","Show GUI corner adjuster for each piece where its corner quality exceeds the corners quality threshold", cxxopts::value<bool>()->default_value("false"))
+      ("gui-scale","Initial scale factor for images shown in GUI windows",  cxxopts::value<float>()->default_value("1.0"))
       ("save-all", "Save all images (originals, contours, b&w, color, corners, edges)", cxxopts::value<bool>()->default_value("false"))
       ("save-originals", "Save original images", cxxopts::value<bool>()->default_value("false"))                        
       ("save-contours", "Save contour images", cxxopts::value<bool>()->default_value("false"))            
@@ -176,7 +178,12 @@ int main(int argc, char * argv[])
         
         exit(1);
     }
-    
+
+    bool guided = result["guided"].as<bool>();
+    user_params.setGuidedSolution(guided);
+    if (guided) {
+        user_params.setSolving(true);
+    }
     if (result.count("dont-solve")) {
         user_params.setSolving(false);
     }
@@ -188,8 +195,8 @@ int main(int argc, char * argv[])
     user_params.setPartitionFactor(result["partition"].as<float>());
     user_params.setFindCornersBlockSize(result["corners-blocksize"].as<uint>());
     user_params.setMinCornersQuality(result["corners-quality"].as<uint>());  
-    user_params.setEditingCorners(result["edit-corners"].as<bool>());
-    user_params.setCornerEditorScale(result["corner-edit-scale"].as<float>());
+    user_params.setAdjustingCorners(result["adjust-corners"].as<bool>());
+    user_params.setGuiScale(result["gui-scale"].as<float>());
     user_params.setSaveAll(result["save-all"].as<bool>());
     user_params.setSavingOriginals(result["save-originals"].as<bool>());    
     user_params.setSavingContours(result["save-contours"].as<bool>());        

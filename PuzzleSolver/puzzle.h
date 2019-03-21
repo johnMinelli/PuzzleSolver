@@ -32,15 +32,18 @@ private:
     params& user_params;
     bool solved;
     std::vector<match_score> matches;
-    std::vector<piece> extract_pieces();
     std::vector<piece>  pieces;
+    std::map<std::string,std::string> guided_matches;
     cv::Mat_<int> solution;
+    cv::Mat_<int> solution_rotations;    
+    std::vector<piece> extract_pieces();
     void print_edges();
-    cv::Mat_<int> solution_rotations;
     void fill_costs();
     std::string edgeType_to_s(edgeType e);
 public:
     puzzle(params& userParams);
+    void load_guided_matches();
+    bool guide_match(int p1, int e1, int p2, int e2);    
     void solve();
     void save_solution_text();
     std::string get_solution_image_pathname();

@@ -12,6 +12,8 @@
 #include <iostream>
 #include <vector>
 #include "compat_opencv.h"
+#include "puzzle.h"
+#include "params.h"
 
 class PuzzleDisjointSet{
 public:
@@ -26,11 +28,14 @@ private:
     int set_count;
     uint merge_failures;
     std::vector<forest> sets;
+    params& user_params;
+    puzzle* p;
+    puzzle* get_puzzle();
     void rotate_ccw(int id, int times);
     void make_set(int x);
     cv::Point find_location(cv::Mat_<int>, int number );
 public:
-    PuzzleDisjointSet( int number);
+    PuzzleDisjointSet(puzzle* p, params& user_params, int number);
     bool join_sets(int a, int b, int how_a, int how_b);
     int find(int a);
     bool in_same_set(int a, int b);
