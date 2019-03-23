@@ -20,7 +20,6 @@
 #include "logger.h"
 #include "params.h"
 #include "puzzle.h"
-#include "PuzzleDisjointSet.h"
 #include "utils.h"
 #include "contours.h"
 #include "config.h"
@@ -231,6 +230,14 @@ int main(int argc, char * argv[])
     if (!user_params.isSolving()) {
         return 0;
     }
+    
+    logger::stream() << "Finding edge costs..." << std::endl;
+    logger::flush();
+    puzzle.fill_costs();
+    gettimeofday(&time, NULL);
+    logger::stream() << std::endl << "time to fill edge costs:"  << (((time.tv_sec * 1000) + (time.tv_usec / 1000))-inbetween_millis)/1000.0 << std::endl;
+    logger::flush();
+    inbetween_millis = ((time.tv_sec * 1000) + (time.tv_usec / 1000));
     
     puzzle.solve();
     gettimeofday(&time, NULL);

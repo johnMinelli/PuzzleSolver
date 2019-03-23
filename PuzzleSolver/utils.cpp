@@ -14,12 +14,12 @@
 #include "logger.h"
 
 
-void line(cv::Mat mat, std::vector<cv::Point> points, int index1, int index2, cv::Scalar color) {
+void utils::line(cv::Mat mat, std::vector<cv::Point> points, int index1, int index2, cv::Scalar color) {
     cv::line(mat, points[wrap_index(points, index1)], points[wrap_index(points, index2)], color);
 }
 
 //This function takes a directory, and returns a vector of every image opencv could extract from it.
-imlist getImages(std::string path){
+imlist utils::getImages(std::string path){
     imlist v;
     
     DIR *dp;
@@ -61,7 +61,7 @@ imlist getImages(std::string path){
 
 
 //Easy way to take a list of images and create a bw image at a specified threshold.
-imlist color_to_bw(imlist color, int threshold){
+imlist utils::color_to_bw(imlist color, int threshold){
     imlist black_and_white;
     for(imlist::iterator i = color.begin(); i != color.end(); i++){
         cv::Mat bw;
@@ -73,7 +73,7 @@ imlist color_to_bw(imlist color, int threshold){
 }
 
 //Performs a open then a close operation in order to remove small anomolies.
-void filter(imlist to_filter, int size){
+void utils::filter(imlist to_filter, int size){
     cv::Mat k = cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(size,size));
     for(imlist::iterator i = to_filter.begin(); i != to_filter.end(); i++){
         cv::Mat bw;
@@ -84,7 +84,7 @@ void filter(imlist to_filter, int size){
 }
 
 //Performs a open then a close operation in order to remove small anomolies.
-imlist blur(imlist to_filter, int size, double sigma){
+imlist utils::blur(imlist to_filter, int size, double sigma){
     imlist ret;
     for(imlist::iterator i = to_filter.begin(); i != to_filter.end(); i++){
         cv::Mat m;
@@ -96,7 +96,7 @@ imlist blur(imlist to_filter, int size, double sigma){
 
 
 //Performs a open then a close operation in order to remove small anomolies.
-imlist median_blur(imlist to_filter, int k){
+imlist utils::median_blur(imlist to_filter, int k){
     imlist ret;
     for(imlist::iterator i = to_filter.begin(); i != to_filter.end(); i++){
         cv::Mat m;
@@ -106,7 +106,7 @@ imlist median_blur(imlist to_filter, int k){
     return ret;
 }
 
-imlist bilateral_blur(imlist to_blur){
+imlist utils::bilateral_blur(imlist to_blur){
     imlist ret;
     for(imlist::iterator i = to_blur.begin(); i != to_blur.end(); i++){
         cv::Mat m;
@@ -118,7 +118,7 @@ imlist bilateral_blur(imlist to_blur){
     }
     return ret;
 }
-std::vector<cv::Point> remove_duplicates(std::vector<cv::Point> vec){
+std::vector<cv::Point> utils::remove_duplicates(std::vector<cv::Point> vec){
     bool dupes_found = true;
     while(dupes_found){
         dupes_found=false;
@@ -142,29 +142,114 @@ std::vector<cv::Point> remove_duplicates(std::vector<cv::Point> vec){
     return vec;
 }
 
-void write_img(params& user_params, cv::Mat& img, std::string filename) {
+void utils::write_img(params& user_params, cv::Mat& img, std::string filename) {
     if (user_params.isVerbose()) {
         logger::stream() << "Writing " << filename << std::endl; logger::flush();
     }
     cv::imwrite(filename, img);
 }
 
-void write_debug_img(params& user_params, cv::Mat& img, std::string prefix, std::string index) {
+void utils::write_debug_img(params& user_params, cv::Mat& img, std::string prefix, std::string index) {
     std::stringstream file_name;
     file_name << user_params.getOutputDir() << prefix << "-" << index << ".png";
     write_img(user_params, img, file_name.str());
 }
 
-void write_debug_img(params& user_params, cv::Mat& img, std::string prefix, std::string index1, std::string index2) {
+void utils::write_debug_img(params& user_params, cv::Mat& img, std::string prefix, std::string index1, std::string index2) {
     write_debug_img(user_params, img, prefix, index1 + "-" + index2);
 }
 
-void write_debug_img(params& user_params, cv::Mat& img, std::string prefix, uint index) {
+void utils::write_debug_img(params& user_params, cv::Mat& img, std::string prefix, uint index) {
     write_debug_img(user_params, img, prefix, std::to_string(index));
 }
 
-void write_debug_img(params& user_params, cv::Mat& img, std::string prefix, uint index1, uint index2) {
+void utils::write_debug_img(params& user_params, cv::Mat& img, std::string prefix, uint index1, uint index2) {
     write_debug_img(user_params, img, prefix, std::to_string(index1), std::to_string(index2));
 }
 
 
+
+/**
+ * Function to check if the color of the given image
+ * is the same as the given color
+ *
+ * Parameters:
+ *   edge        The source image
+ *   color   The color to check
+ */
+bool is_border(cv::Mat& edge, cv::Vec3b color)
+{
+    cv::Mat im = edge.clone().reshape(0,1);
+
+    bool res = true;
+    for (int i = 0; i < im.cols; ++i)
+        res &= (color == im.at<cv::Vec3b>(0,i));
+
+    return res;
+}
+
+/**
+ * Function to auto-cropping image
+ *
+ * Parameters:
+ *   src   The source image
+ *   dst   The destination image
+ */
+void utils::autocrop(cv::Mat& src, cv::Mat& dst)
+{
+    cv::Rect win(0, 0, src.cols, src.rows);
+
+    std::vector<cv::Rect> edges;
+    edges.push_back(cv::Rect(0, 0, src.cols, 1));
+    edges.push_back(cv::Rect(src.cols-2, 0, 1, src.rows));
+    edges.push_back(cv::Rect(0, src.rows-2, src.cols, 1));
+    edges.push_back(cv::Rect(0, 0, 1, src.rows));
+
+    cv::Mat edge;
+    int nborder = 0;
+    cv::Vec3b color = src.at<cv::Vec3b>(src.cols-1,src.rows-1);
+
+    for (int i = 0; i < edges.size(); ++i)
+    {
+        edge = src(edges[i]);
+        nborder += is_border(edge, color);
+    }
+
+    if (nborder == 0)
+    {
+        src.copyTo(dst);
+        return;
+    }
+
+    bool next;
+
+    do {
+        edge = src(cv::Rect(win.x, win.height-2, win.width, 1));
+        if ((next = is_border(edge, color)))
+            win.height--;
+    }
+    while (next && win.height > 0);
+
+    do {
+        edge = src(cv::Rect(win.width-2, win.y, 1, win.height));
+        if ((next = is_border(edge, color)))
+            win.width--;
+    }
+    while (next && win.width > 0);
+
+    do {
+        edge = src(cv::Rect(win.x, win.y, win.width, 1));
+        if ((next = is_border(edge, color)))
+            win.y++, win.height--;
+    }
+    while (next && win.y <= src.rows);
+
+    do {
+        edge = src(cv::Rect(win.x, win.y, 1, win.height));
+        if ((next = is_border(edge, color)))
+            win.x++, win.width--;
+    }
+    while (next && win.x <= src.cols);
+
+    dst = src(win);
+}

@@ -69,7 +69,8 @@ public:
         
         std::vector<cv::Point2f> corners;
         for (uint i = 0; i < scaled_corners.size(); i++) {
-            corners.push_back(scaled_corners[i] / scale_factor);
+            cv::Point2f c = scaled_corners[i];
+            corners.push_back(cv::Point2f(c.x / scale_factor, c.y / scale_factor));
         }
         scale_factor = new_scale;
         init_scaled_corners(corners);
@@ -123,7 +124,8 @@ public:
         if (edited) {
             edited_corners.clear();
             for (uint i = 0; i < 4; i++) {
-                edited_corners.push_back(scaled_corners[i] / scale_factor);
+                cv::Point2f c = scaled_corners[i];
+                edited_corners.push_back(cv::Point2f(c.x / scale_factor, c.y / scale_factor));
             }
         }
         return edited;

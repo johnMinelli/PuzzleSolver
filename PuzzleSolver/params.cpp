@@ -231,7 +231,7 @@ std::string params::to_string() const {
     stream << "find corners block size  " << this->getFindCornersBlockSize() << std::endl;
     stream << "min corners quality .... " << this->getMinCornersQuality() << std::endl;
     stream << "adjust corners ......... " << bool_to_string(this->isAdjustingCorners()) << std::endl;          
-    stream << "corner adjuster scale .. " << this->getGuiScale() << std::endl;     
+    stream << "gui scale .............. " << this->getGuiScale() << std::endl;     
     stream << "save original images ... " << bool_to_string(this->isSavingOriginals()) << std::endl;
     stream << "save contour images .... " << bool_to_string(this->isSavingContours()) << std::endl;
     stream << "save b&w images ........ " << bool_to_string(this->isSavingBlackWhite()) << std::endl;    

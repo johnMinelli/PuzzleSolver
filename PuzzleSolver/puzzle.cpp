@@ -70,7 +70,7 @@ void puzzle::print_edges(){
             putText(m, pieces[i].edges[j].edge_type_to_s(), cv::Point(300,300),
                     cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, color, 1, COMPAT_CV_LINE_AA);
 
-            write_debug_img(user_params, m, "edge", pieces[i].get_id(), std::to_string(j));
+            utils::write_debug_img(user_params, m, "edge", pieces[i].get_id(), std::to_string(j));
         }
     }
 }
@@ -78,7 +78,7 @@ void puzzle::print_edges(){
 
 std::vector<piece> puzzle::extract_pieces() {
     std::vector<piece> pieces;
-    imlist color_images = getImages(user_params.getInputDir());
+    imlist color_images = utils::getImages(user_params.getInputDir());
 
     logger::stream() << "Extracting pieces..." << std::endl;    
     logger::flush();
@@ -89,11 +89,11 @@ std::vector<piece> puzzle::extract_pieces() {
 
     imlist bw;
     if(user_params.isUsingMedianFilter()){
-        imlist blured_images = median_blur(color_images, user_params.getMedianBlurKSize());
-        bw = color_to_bw(blured_images, user_params.getThreshold());
+        imlist blured_images = utils::median_blur(color_images, user_params.getMedianBlurKSize());
+        bw = utils::color_to_bw(blured_images, user_params.getThreshold());
     } else{
-        bw= color_to_bw(color_images, user_params.getThreshold());
-        filter(bw,2);
+        bw= utils::color_to_bw(color_images, user_params.getThreshold());
+        utils::filter(bw,2);
     }
 
     uint unique_piece_id = user_params.getInitialPieceId();
@@ -107,8 +107,8 @@ std::vector<piece> puzzle::extract_pieces() {
         std::string image_number(image_number_buf);
         
         if (user_params.isSavingOriginals()) {
-            write_debug_img(user_params, bw[i],"original-bw", image_number);
-            write_debug_img(user_params, color_images[i], "original-color", image_number);
+            utils::write_debug_img(user_params, bw[i],"original-bw", image_number);
+            utils::write_debug_img(user_params, color_images[i], "original-color", image_number);
         }
 
         std::vector<std::vector<cv::Point> > found_contours;
@@ -132,7 +132,7 @@ std::vector<piece> puzzle::extract_pieces() {
             cv::Rect bounds =  cv::boundingRect(found_contours[j]);
             if(bounds.width < user_params.getEstimatedPieceSize() || bounds.height < user_params.getEstimatedPieceSize()) continue;
             
-            contour_mgr.add_contour(bounds, remove_duplicates(found_contours[j]));
+            contour_mgr.add_contour(bounds, utils::remove_duplicates(found_contours[j]));
         }
 
         contour_mgr.sort_contours();
@@ -150,10 +150,10 @@ std::vector<piece> puzzle::extract_pieces() {
             }
 
             cv::drawContours(cmat, contours_to_draw, -1, cv::Scalar(255,255,255), 2, 16);
-            write_debug_img(user_params, cmat, "contours", image_number);
+            utils::write_debug_img(user_params, cmat, "contours", image_number);
         }
         
-        // Uncomment to save a version off the original with the piece numbers overlayed
+        // Uncomment to save a version of the original with the piece numbers overlayed
         /*
         if (user_params.isSavingOriginals()) {
             cv::Mat cmat = color_images[i].clone();
@@ -183,11 +183,11 @@ std::vector<piece> puzzle::extract_pieces() {
             
             cv::Mat new_bw = cv::Mat::zeros(bounds.height+2*bordersize,bounds.width+2*bordersize,CV_8UC1);
             std::vector<std::vector<cv::Point> > contours_to_draw;
-            contours_to_draw.push_back(translate_contour(points, bordersize-bounds.x, bordersize-bounds.y));
+            contours_to_draw.push_back(utils::translate_contour(points, bordersize-bounds.x, bordersize-bounds.y));
             cv::drawContours(new_bw, contours_to_draw, -1, cv::Scalar(255), COMPAT_CV_FILLED);
 
             if (user_params.isSavingBlackWhite()) {
-                write_debug_img(user_params, new_bw, "bw", piece_id);
+                utils::write_debug_img(user_params, new_bw, "bw", piece_id);
             }
 
             cv::Rect b2(bounds.x-3, bounds.y-3, bounds.width+6, bounds.height+6);
@@ -196,7 +196,7 @@ std::vector<piece> puzzle::extract_pieces() {
             color_roi.copyTo(mini_color(cv::Rect(bordersize-3,bordersize-3,b2.width,b2.height)));
             
             if (user_params.isSavingColor()) {
-                write_debug_img(user_params, mini_color, "color", piece_id);
+                utils::write_debug_img(user_params, mini_color, "color", piece_id);
             }
             cv::Mat mini_bw = new_bw;
             //Create a copy so it can't conflict.
@@ -216,6 +216,7 @@ std::vector<piece> puzzle::extract_pieces() {
 
 
 void puzzle::fill_costs(){
+    
     int no_edges = (int) pieces.size()*4;
     
     //TODO: use openmp to speed up this loop w/o blocking the commented lines below
@@ -236,21 +237,11 @@ void puzzle::fill_costs(){
     std::sort(matches.begin(),matches.end(),match_score::compare);
 }
 
-
-
-//Solves the puzzle
-void puzzle::solve(){
-    
-    load_guided_matches();
-    
-    logger::stream() << "Finding edge costs..." << std::endl;
-    logger::flush();
-    fill_costs();
-    std::vector<match_score>::iterator i= matches.begin();
-    PuzzleDisjointSet p(this, user_params, (int)pieces.size());
-    
-    
+void puzzle::auto_solve(PuzzleDisjointSet& p) {
     int output_id=0;
+    
+    
+    std::vector<match_score>::iterator i= matches.begin();
     while(!p.in_one_set() && i!=matches.end() ){
         int p1 = i->edge1/4;
         int e1 = i->edge1%4;
@@ -272,10 +263,85 @@ void puzzle::solve(){
                     pieces[p2].get_id() << "-" << (e2+1) << ", score:" << i->score << " count: "  << output_id <<std::endl;
             logger::flush();
         }
-        p.join_sets(p1, p2, e1, e2);
+        PuzzleDisjointSet::join_context& c = p.compute_join(p1, p2, e1, e2);
+        if (c.joinable) {
+            p.complete_join(c);
+        }
         i++;
         output_id += 1;
+    }    
+}
+
+// Unlike auto_solve, in which the sets managed by PuzzleDisjointSet randomly coalesce during the solution phase,
+// guided_solve attempts to help the human operator by keeping the number of matched sets down to a minimum
+void puzzle::guided_solve(PuzzleDisjointSet& p) {
+    int output_id=0;
+    
+    bool done = false;
+    
+    while (!p.in_one_set()) {
+        std::vector<match_score>::iterator i= matches.begin();
+        while(!p.in_one_set() && i!=matches.end() ) {
+            int p1 = i->edge1/4;
+            int e1 = i->edge1%4;
+            int p2 = i->edge2/4;
+            int e2 = i->edge2%4;
+            
+            PuzzleDisjointSet::join_context& c = p.compute_join(p1, p2, e1, e2);
+            if (c.joinable) {
+                    
+                if (p.collection_set_count() == 0) {
+                    if (guide_match(p1, p2, e1, e2)) {
+                        p.complete_join(c);
+                        break;
+                    }
+                }
+                else {
+                    if (p.is_collection_set(c.rep_a) && p.is_unmatched_set(p2)) {
+                        if (guide_match(p1, p2, e1, e2)) {
+                            p.complete_join(c);
+                            break;
+                        }
+                    }
+                    else if (p.is_collection_set(c.rep_b) && p.is_unmatched_set(p1)) {
+                        if (guide_match(p2, p1, e2, e1)) {                        
+                            PuzzleDisjointSet::join_context& c2 = p.compute_join(p2, p1, e2, e1);
+                            if (!c2.joinable) { // should never happen
+                                logger::stream() << "Join computation failed on re-ordered p1,p2: "<< pieces[p1].get_id() << "-" << (e1+1) << " with: " << 
+                                        pieces[p2].get_id() << "-" << (e2+1) <<std::endl;
+                            }
+                            else {
+                                p.complete_join(c2);
+                            }
+                            break;
+                        }
+                    }
+                }
+
+            }
+            i++;
+            output_id += 1;
+        }   
     }
+}
+
+//Solves the puzzle
+void puzzle::solve(){
+    
+    load_guided_matches();
+    
+    
+    PuzzleDisjointSet p(user_params, (int)pieces.size());
+    
+    if (!user_params.isGuidedSolution()) {
+        auto_solve(p);
+    }
+    else {
+        guided_solve(p);
+    }
+        
+
+
     
     p.finish();
     
@@ -283,8 +349,9 @@ void puzzle::solve(){
         logger::stream() << "Possible solution found" << std::endl;
         logger::flush();
         solved = true;
-        solution = p.get(p.find(1)).locations;
-        solution_rotations = p.get(p.find(1)).rotations;
+        PuzzleDisjointSet::forest f = p.get(p.find(1));
+        solution = f.locations;
+        solution_rotations = f.rotations;
         
         for(int i =0; i<solution.size[0]; i++){
             for(int j=0; j<solution.size[1]; j++){
@@ -366,10 +433,12 @@ bool puzzle::guide_match(int p1, int p2, int e1, int e2) {
         return true;  // true results in the default automatic solution behavior
     }
     
-    std::cout << "Does piece " << (p1 + user_params.getInitialPieceId()) << " fit to " << (p2 + user_params.getInitialPieceId()) << " ?" << std::flush;
+    std::cout << "Does piece " << (p1 + user_params.getInitialPieceId()) << " fit to " << (p2 + user_params.getInitialPieceId()) << " ? " << std::flush;
     
     std::string response = guided_match(pieces[p1], pieces[p2], e1, e2, user_params);
-    std::cout << "Guided match " << response << std::endl;
+    std::cout << response << std::endl;
+    
+    guided_matches[id] = response;
     
     bool match = (response == "yes");
 
@@ -433,90 +502,6 @@ std::string puzzle::get_solution_image_pathname() {
 }
 
 
-/**
- * Function to check if the color of the given image
- * is the same as the given color
- *
- * Parameters:
- *   edge        The source image
- *   color   The color to check
- */
-bool is_border(cv::Mat& edge, cv::Vec3b color)
-{
-    cv::Mat im = edge.clone().reshape(0,1);
-
-    bool res = true;
-    for (int i = 0; i < im.cols; ++i)
-        res &= (color == im.at<cv::Vec3b>(0,i));
-
-    return res;
-}
-
-/**
- * Function to auto-cropping image
- *
- * Parameters:
- *   src   The source image
- *   dst   The destination image
- */
-void autocrop(cv::Mat& src, cv::Mat& dst)
-{
-    cv::Rect win(0, 0, src.cols, src.rows);
-
-    std::vector<cv::Rect> edges;
-    edges.push_back(cv::Rect(0, 0, src.cols, 1));
-    edges.push_back(cv::Rect(src.cols-2, 0, 1, src.rows));
-    edges.push_back(cv::Rect(0, src.rows-2, src.cols, 1));
-    edges.push_back(cv::Rect(0, 0, 1, src.rows));
-
-    cv::Mat edge;
-    int nborder = 0;
-    cv::Vec3b color = src.at<cv::Vec3b>(src.cols-1,src.rows-1);
-
-    for (int i = 0; i < edges.size(); ++i)
-    {
-        edge = src(edges[i]);
-        nborder += is_border(edge, color);
-    }
-
-    if (nborder == 0)
-    {
-        src.copyTo(dst);
-        return;
-    }
-
-    bool next;
-
-    do {
-        edge = src(cv::Rect(win.x, win.height-2, win.width, 1));
-        if ((next = is_border(edge, color)))
-            win.height--;
-    }
-    while (next && win.height > 0);
-
-    do {
-        edge = src(cv::Rect(win.width-2, win.y, 1, win.height));
-        if ((next = is_border(edge, color)))
-            win.width--;
-    }
-    while (next && win.width > 0);
-
-    do {
-        edge = src(cv::Rect(win.x, win.y, win.width, 1));
-        if ((next = is_border(edge, color)))
-            win.y++, win.height--;
-    }
-    while (next && win.y <= src.rows);
-
-    do {
-        edge = src(cv::Rect(win.x, win.y, 1, win.height));
-        if ((next = is_border(edge, color)))
-            win.x++, win.width--;
-    }
-    while (next && win.x <= src.cols);
-
-    dst = src(win);
-}
 
 //Saves an image of the representation of the puzzle.
 //only really works when there are no holes
@@ -601,7 +586,7 @@ void puzzle::save_solution_image(){
 
     cv::Mat final_out_image;
     
-    autocrop(out_image, final_out_image);
+    utils::autocrop(out_image, final_out_image);
     cv::imwrite(get_solution_image_pathname(), final_out_image);
     
     

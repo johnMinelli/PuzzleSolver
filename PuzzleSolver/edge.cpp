@@ -19,7 +19,7 @@ edge::edge(std::vector<cv::Point> edge){
     //original
     contour = edge;
     arc_length = cv::arcLength(contour, false);
-    corner_distance = distance<int>(edge[0], edge[edge.size()-1]);
+    corner_distance = utils::distance<int>(edge[0], edge[edge.size()-1]);
     //Normalized contours are used for comparisons
     normalized_contour = normalize(contour);
     std::vector<cv::Point> copy(contour.begin(),contour.end());
@@ -83,7 +83,7 @@ double edge::compare3(edge that){
     for(std::vector<cv::Point2f>::iterator i = normalized_contour.begin(); i!=normalized_contour.end(); i++){
         double min = DBL_MAX;
         for(std::vector<cv::Point2f>::iterator j = that.reverse_normalized_contour.begin(); j!=that.reverse_normalized_contour.end(); j++) {
-            double dist = distance<float>(*i,*j);
+            double dist = utils::distance<float>(*i,*j);
             if(dist<min) min = dist;
         }
         
@@ -123,11 +123,11 @@ void edge::classify(){
 
 
 std::vector<cv::Point> edge::get_translated_contour(int offset_x, int offset_y){
-    return translate_contour(normalized_contour, offset_x, offset_y);
+    return utils::translate_contour(normalized_contour, offset_x, offset_y);
 };
 
 std::vector<cv::Point> edge::get_translated_contour_reverse(int offset_x, int offset_y){
-    return translate_contour(reverse_normalized_contour, offset_x, offset_y);
+    return utils::translate_contour(reverse_normalized_contour, offset_x, offset_y);
 };
 
 

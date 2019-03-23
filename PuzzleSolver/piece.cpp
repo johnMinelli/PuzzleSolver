@@ -66,10 +66,10 @@ void piece::process(){
 template <class T>
 double ts_distance(std::vector<cv::Point_<T>> corners, uint index1, uint index2, uint index3) {
     
-    double result = distance<T>(corners, 0, index1);
-    result += distance<T>(corners, index1, index2);
-    result += distance<T>(corners, index2, index3);
-    result += distance<T>(corners, index3, 0);
+    double result = utils::distance<T>(corners, 0, index1);
+    result += utils::distance<T>(corners, index1, index2);
+    result += utils::distance<T>(corners, index2, index3);
+    result += utils::distance<T>(corners, index3, 0);
     return result;
 }
 
@@ -113,11 +113,11 @@ double compute_corners_quality(std::vector<cv::Point_<T>> corners) {
     double side_length[4] = {0, 0, 0, 0};
     
     for (uint i = 0; i < 4; i++) {
-        double angle_diff = compute_angle<T>(cpoints, i) - 90.0;
+        double angle_diff = utils::compute_angle<T>(cpoints, i) - 90.0;
         double corner_quality = angle_diff * angle_diff;
         quality += corner_quality;
         
-        side_length[i] = distance<T>(cpoints, i, i+1);
+        side_length[i] = utils::distance<T>(cpoints, i, i+1);
     }
     
     // sldiff is the percent difference between opposite side lengths.
@@ -288,7 +288,7 @@ void piece::extract_edges(){
     }
     std::vector<cv::Point> contour = contours[0];
 
-    contour = remove_duplicates(contour);
+    contour = utils::remove_duplicates(contour);
 
     //out of all of the found corners, find the closest points in the contour,
     //these will become the endpoints of the edges
@@ -296,7 +296,7 @@ void piece::extract_edges(){
         double best = 10000000000;
         cv::Point2f closest_point = contour[0];
         for(uint j = 0; j<contour.size(); j++){
-            double d = distance<int>(corners[i],contour[j]);
+            double d = utils::distance<int>(corners[i],contour[j]);
             if(d<best){
                 best = d;
                 closest_point = contour[j];

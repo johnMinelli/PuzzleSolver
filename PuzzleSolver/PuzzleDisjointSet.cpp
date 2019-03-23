@@ -16,7 +16,7 @@
 #include "compat_opencv.h"
 #include "logger.h"
 
-PuzzleDisjointSet::PuzzleDisjointSet(puzzle* p, params& user_params, int number) : p(p), user_params(user_params) {
+PuzzleDisjointSet::PuzzleDisjointSet(params& user_params, int number) : user_params(user_params) {
     set_count=0;
     merge_failures = 0;
     for(int i=0; i<number; i++){
@@ -25,9 +25,6 @@ PuzzleDisjointSet::PuzzleDisjointSet(puzzle* p, params& user_params, int number)
 
 }
 
-puzzle* PuzzleDisjointSet::get_puzzle() {
-    return p;
-}
 
 void PuzzleDisjointSet::make_set(int new_id){
     forest f;
@@ -40,10 +37,12 @@ void PuzzleDisjointSet::make_set(int new_id){
 }
 
 
-bool PuzzleDisjointSet::join_sets(int a, int b, int how_a, int how_b){
-    int rep_a = find(a);
-    int rep_b = find(b);
-    if(rep_a==rep_b) return  false; //Already in same set...
+PuzzleDisjointSet::join_context& PuzzleDisjointSet::compute_join(int a, int b, int how_a, int how_b) {
+    static join_context c;
+    c.joinable = false;
+    c.rep_a = find(a);
+    c.rep_b = find(b);
+    if(c.rep_a==c.rep_b) return c; //Already in same set...
     
 
 
@@ -51,24 +50,24 @@ bool PuzzleDisjointSet::join_sets(int a, int b, int how_a, int how_b){
 
     //We need A to have its adjoining edge to be to the right, position 2
     // meaning if its rotation was 0 it would need to be rotated by 2
-    cv::Point loc_of_a = find_location(sets[rep_a].locations, a);
-    int rot_a = sets[rep_a].rotations(loc_of_a);
+    cv::Point loc_of_a = find_location(sets[c.rep_a].locations, a);
+    int rot_a = sets[c.rep_a].rotations(loc_of_a);
     int to_rot_a = (6 - how_a - rot_a)%4;
-    rotate_ccw(rep_a, to_rot_a);
+    rotate_ccw(c.rep_a, to_rot_a);
     
     //We need B to have its adjoining edge to the left, position 0
     //if its position was 0, 
-    cv::Point loc_of_b = find_location(sets[rep_b].locations, b);
-    int rot_b = sets[rep_b].rotations(loc_of_b);
+    cv::Point loc_of_b = find_location(sets[c.rep_b].locations, b);
+    int rot_b = sets[c.rep_b].rotations(loc_of_b);
     int to_rot_b = (8-rot_b-how_b)%4;
-    rotate_ccw(rep_b, to_rot_b);
+    rotate_ccw(c.rep_b, to_rot_b);
     
     
     //figure out the size of the new Mats
-    loc_of_a = find_location(sets[rep_a].locations, a);
-    COMPAT_CV_MAT_SIZE size_of_a = sets[rep_a].locations.size;
-    loc_of_b = find_location(sets[rep_b].locations, b);
-    COMPAT_CV_MAT_SIZE size_of_b = sets[rep_b].locations.size;
+    loc_of_a = find_location(sets[c.rep_a].locations, a);
+    COMPAT_CV_MAT_SIZE size_of_a = sets[c.rep_a].locations.size;
+    loc_of_b = find_location(sets[c.rep_b].locations, b);
+    COMPAT_CV_MAT_SIZE size_of_b = sets[c.rep_b].locations.size;
     
     int width = std::max(size_of_a[1], loc_of_a.x - loc_of_b.x +1 +size_of_b[1]) - std::min(0, loc_of_a.x-loc_of_b.x +1);
     int height = std::max(size_of_a[0], loc_of_a.y - loc_of_b.y +size_of_b[0]) - std::min(0, loc_of_a.y-loc_of_b.y);
@@ -87,10 +86,10 @@ bool PuzzleDisjointSet::join_sets(int a, int b, int how_a, int how_b){
     int bx_offset = -(loc_of_b.x -( loc_of_a.x+ax_offset+1));
     int by_offset = -(loc_of_b.y -(loc_of_a.y+ay_offset));
     
-    sets[rep_a].locations.copyTo(new_a_locs(cv::Rect(ax_offset,ay_offset,size_of_a[1],size_of_a[0])));
-    sets[rep_a].rotations.copyTo(new_a_rots(cv::Rect(ax_offset,ay_offset,size_of_a[1],size_of_a[0])));
-    sets[rep_b].locations.copyTo(new_b_locs(cv::Rect(bx_offset,by_offset,size_of_b[1],size_of_b[0])));
-    sets[rep_b].rotations.copyTo(new_b_rots(cv::Rect(bx_offset,by_offset,size_of_b[1],size_of_b[0])));
+    sets[c.rep_a].locations.copyTo(new_a_locs(cv::Rect(ax_offset,ay_offset,size_of_a[1],size_of_a[0])));
+    sets[c.rep_a].rotations.copyTo(new_a_rots(cv::Rect(ax_offset,ay_offset,size_of_a[1],size_of_a[0])));
+    sets[c.rep_b].locations.copyTo(new_b_locs(cv::Rect(bx_offset,by_offset,size_of_b[1],size_of_b[0])));
+    sets[c.rep_b].rotations.copyTo(new_b_rots(cv::Rect(bx_offset,by_offset,size_of_b[1],size_of_b[0])));
 
 
 
@@ -103,7 +102,7 @@ bool PuzzleDisjointSet::join_sets(int a, int b, int how_a, int how_b){
                     logger::stream() << "Failed to merge because of overlap" << std::endl; logger::flush();
                     merge_failures++;
                 }
-                return false;
+                return c;
             }
             
             if(new_a_locs(i,j) == -1 && new_b_locs(i,j)!=-1){
@@ -114,20 +113,34 @@ bool PuzzleDisjointSet::join_sets(int a, int b, int how_a, int how_b){
         }
     }
 
-    if (!get_puzzle()->guide_match(a, b, how_a, how_b)) {
-        return false;
-    }
+    c.new_a_locs = new_a_locs;
+    c.new_a_rots = new_a_rots;
+    c.joinable = true;
+    return c;
+}
+
+void PuzzleDisjointSet::complete_join(join_context& c) {
+
     
     //Set the new representative a, to have this Mat
-    sets[rep_a].locations = new_a_locs;
-    sets[rep_a].rotations = new_a_rots;
+    sets[c.rep_a].locations = c.new_a_locs;
+    sets[c.rep_a].rotations = c.new_a_rots;
     
     //Updating the number of sets left
     set_count--;
     
+    std::vector<int>::iterator ci = std::find(csets.begin(), csets.end(), c.rep_a);
+    if (ci == csets.end()) {
+        csets.insert(csets.begin(), c.rep_a);
+    }
+    
+    ci = std::find(csets.begin(), csets.end(), c.rep_b);
+    if (ci != csets.end()) {
+        csets.erase(ci);
+    }
+    
     //Representative is the same idea as a disjoint set datastructure
-    sets[rep_b].representative = rep_a;
-    return true; //Everything seems ok if it got this far
+    sets[c.rep_b].representative = c.rep_a;
 }
 
 void PuzzleDisjointSet::finish() {
@@ -142,6 +155,21 @@ int PuzzleDisjointSet::find(int a){
         rep = sets[rep].representative;
     }
     return rep;
+}
+
+bool PuzzleDisjointSet::is_collection_set(int rep) {
+    std::vector<int>::iterator i = std::find(csets.begin(), csets.end(), rep);
+    return i != csets.end();
+}
+
+bool PuzzleDisjointSet::is_unmatched_set(int rep) {
+    forest s = sets[rep];
+    return (s.representative == -1 && s.locations.rows == 1 && s.locations.cols == 1);
+}
+
+int PuzzleDisjointSet::collection_set_count() {
+    int result = csets.size();
+    return result;
 }
 
 bool PuzzleDisjointSet::in_same_set(int a, int b){

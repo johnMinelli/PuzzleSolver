@@ -18,6 +18,7 @@
 #include "edge.h"
 #include "params.h"
 #include "piece.h"
+#include "PuzzleDisjointSet.h"
 
 
 class puzzle{
@@ -38,12 +39,14 @@ private:
     cv::Mat_<int> solution_rotations;    
     std::vector<piece> extract_pieces();
     void print_edges();
-    void fill_costs();
     std::string edgeType_to_s(edgeType e);
+    void auto_solve(PuzzleDisjointSet& p);
+    void guided_solve(PuzzleDisjointSet& p);
 public:
     puzzle(params& userParams);
     void load_guided_matches();
     bool guide_match(int p1, int e1, int p2, int e2);    
+    void fill_costs();
     void solve();
     void save_solution_text();
     std::string get_solution_image_pathname();

@@ -1,6 +1,7 @@
 #include "opencv2/opencv.hpp"
 
 #include <vector>
+#include "compat_opencv.h"
 #include "guided_match.h"
 #include "utils.h"
 
@@ -101,7 +102,7 @@ public:
         cv::Point_<T> b;
         cv::Point_<T> a = get_top(contour, &b);
         cv::Point_<T> c = cv::Point_<T>(b.x, a.y);
-        return compute_rotation_angle(a, b, c);        
+        return utils::compute_rotation_angle(a, b, c);        
     }
     
 
@@ -150,7 +151,7 @@ public:
         // Rotate and translate the selected edge
         edge_contour = rotate(center, p.edges[edge].get_contour(), -angle);
         std::vector<cv::Point> edge_contour_tx;
-        translate_contour(edge_contour, edge_contour_tx, tx.x, tx.y, 1.0);        
+        utils::translate_contour(edge_contour, edge_contour_tx, tx.x, tx.y, 1.0);        
 
 
         // Determine the translation required for alignment
@@ -199,7 +200,7 @@ public:
         // Render edge contour in red
         if (edges) {
             std::vector<std::vector<cv::Point>> edge_contours;
-            edge_contours.push_back(translate_contour(edge_contour_tx, alignx, aligny, scale_factor));
+            edge_contours.push_back(utils::translate_contour(edge_contour_tx, alignx, aligny, scale_factor));
             cv::polylines(rendered, edge_contours, false, cv::Scalar(0, 0, 255), 2);        
         }
         
@@ -262,7 +263,7 @@ public:
         render_piece(p2, e2, 2, rendered, p2xoff, p2yoff, padded_dim, &top);
 
         
-        rounded_rectangle(rendered, cv::Point(10,10), cv::Point(80,50), cv::Scalar(0,150,255), 1, cv::LINE_AA, 10);
+//        rounded_rectangle(rendered, cv::Point(10,10), cv::Point(80,50), cv::Scalar(0,150,255), 1, COMPAT_CV_LINE_AA, 10);
         
         cv::imshow(window_name, rendered);
     }
