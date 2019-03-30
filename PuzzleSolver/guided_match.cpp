@@ -308,6 +308,14 @@ public:
                     done = true;
                     result = "yes";
                     break;
+                case 's':
+                    done = true;
+                    result = "show_set";
+                    break;
+                case 'r':
+                    done = true;
+                    result = "show_rotation";
+                    break;                    
                 case 'c':
                     color = !color;
                     render();
@@ -318,39 +326,39 @@ public:
                     edges = !pieces;
                     render();
                     break;                    
-                case 'm':
-                    margin = (margin + 25) % 50;
-                    std::cout << "Margin is now " << margin << std::endl;
-                    render();
-                    break;
-                case ',':
-                    e1 = (e1+1)%4;
-                    std::cout << "E1 is now " << e1 << std::endl;
-                    render();
-                    break;
-                case '.':
-                    e2 = (e2+1)%4;
-                    std::cout << "E2 is now " << e2 << std::endl;
-                    render();
-                    break;       
+//                case 'm':
+//                    margin = (margin + 25) % 50;
+//                    std::cout << "Margin is now " << margin << std::endl;
+//                    render();
+//                    break;
+//                case ',':
+//                    e1 = (e1+1)%4;
+//                    std::cout << "E1 is now " << e1 << std::endl;
+//                    render();
+//                    break;
+//                case '.':
+//                    e2 = (e2+1)%4;
+//                    std::cout << "E2 is now " << e2 << std::endl;
+//                    render();
+//                    break;       
                 case 'x':
                     p2xoff -= 1;
-                    std::cout << "p2xoff is now " << p2xoff << std::endl;
+//                    std::cout << "p2xoff is now " << p2xoff << std::endl;
                     render();
                     break;
                 case 'X':
                     p2xoff += 1;
-                    std::cout << "p2xoff is now " << p2xoff << std::endl;
+//                    std::cout << "p2xoff is now " << p2xoff << std::endl;
                     render();
                     break;       
                 case 'z':
                     p2yoff -= 1;
-                    std::cout << "p2yoff is now " << p2yoff << std::endl;
+//                    std::cout << "p2yoff is now " << p2yoff << std::endl;
                     render();
                     break;
                 case 'Z':
                     p2yoff += 1;
-                    std::cout << "p2yoff is now " << p2yoff << std::endl;
+//                    std::cout << "p2yoff is now " << p2yoff << std::endl;
                     render();
                     break;                      
                 case '-':

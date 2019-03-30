@@ -13,6 +13,10 @@
 #include <vector>
 #include "compat_opencv.h"
 #include "params.h"
+#include "piece.h"
+
+// Function pointer type for functions that can verify if the two pieces match on the given edges.
+typedef bool (*match_checker) (void* data, int p1, int p2, int e1, int e2); 
 
 class PuzzleDisjointSet{
 public:
@@ -24,6 +28,10 @@ public:
     };
     struct join_context {
         bool joinable;
+        int a;
+        int b;
+        int how_a;
+        int how_b;
         int rep_a;
         int rep_b;
         cv::Mat_<int> new_a_locs;
@@ -35,15 +43,18 @@ private:
     uint merge_failures;
     std::vector<forest> sets;
     std::vector<int> csets; // collector sets... matched sets that are currently unmatched with any other set
+    match_checker edge_checker;
+    void* match_check_data;
     params& user_params;
     void rotate_ccw(int id, int times);
     void make_set(int x);
     cv::Point find_location(cv::Mat_<int>, int number );
 public:
-    PuzzleDisjointSet(params& user_params, int number);
-    join_context& compute_join(int a, int b, int how_a, int how_b);
+    PuzzleDisjointSet(params& user_params, int number, match_checker edge_checker, void* match_check_data);
+    void init_join(join_context& context, int a, int b, int how_a, int how_b);
+    bool compute_join(join_context& context);
     void complete_join(join_context& context);
-//    bool join_sets(int a, int b, int how_a, int how_b);
+    void match_failure();
     int find(int a);
     // returns true if the set is a matched set that is unmatched with any other sets
     bool is_collection_set(int rep);

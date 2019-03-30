@@ -42,10 +42,12 @@ private:
     std::string edgeType_to_s(edgeType e);
     void auto_solve(PuzzleDisjointSet& p);
     void guided_solve(PuzzleDisjointSet& p);
+    std::string set_to_string(cv::Mat_<int> set, int offset);
 public:
     puzzle(params& userParams);
     void load_guided_matches();
-    bool guide_match(int p1, int e1, int p2, int e2);    
+    std::string guide_match(int p1, int e1, int p2, int e2);    
+    bool check_match(int p1, int e1, int p2, int e2);    
     void fill_costs();
     void solve();
     void save_solution_text();

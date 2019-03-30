@@ -40,7 +40,8 @@ public:
     edgeType get_type();
     double compare(edge);
     double compare2(edge);
-    double compare3(edge);    
+    double compare3(edge);
+    double compare3(edge, double& lscore, double& sscore);
     std::string edge_type_to_s();
     
 };

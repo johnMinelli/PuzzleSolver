@@ -16,7 +16,8 @@
 #include "compat_opencv.h"
 #include "logger.h"
 
-PuzzleDisjointSet::PuzzleDisjointSet(params& user_params, int number) : user_params(user_params) {
+PuzzleDisjointSet::PuzzleDisjointSet(params& user_params, int number, match_checker checker, void* match_check_data) 
+  : user_params(user_params), edge_checker(checker), match_check_data(match_check_data) {
     set_count=0;
     merge_failures = 0;
     for(int i=0; i<number; i++){
@@ -36,37 +37,43 @@ void PuzzleDisjointSet::make_set(int new_id){
     set_count++;
 }
 
-
-PuzzleDisjointSet::join_context& PuzzleDisjointSet::compute_join(int a, int b, int how_a, int how_b) {
-    static join_context c;
-    c.joinable = false;
+void PuzzleDisjointSet::init_join(PuzzleDisjointSet::join_context& c, int a, int b, int how_a, int how_b) {
+    c.a = a;
+    c.b = b;
+    c.how_a = how_a;
+    c.how_b = how_b;
     c.rep_a = find(a);
-    c.rep_b = find(b);
-    if(c.rep_a==c.rep_b) return c; //Already in same set...
-    
+    c.rep_b = find(b);    
+    c.joinable = c.rep_a != c.rep_b;
+}
 
+
+bool PuzzleDisjointSet::compute_join(PuzzleDisjointSet::join_context& c) {
+    if (!c.joinable) return false; //Already in same set...
+    
+    c.joinable = false;
 
 //    std::cout << std::endl << sets[rep_a].rotations << std::endl << sets[rep_b].rotations << std::endl;
 
     //We need A to have its adjoining edge to be to the right, position 2
     // meaning if its rotation was 0 it would need to be rotated by 2
-    cv::Point loc_of_a = find_location(sets[c.rep_a].locations, a);
+    cv::Point loc_of_a = find_location(sets[c.rep_a].locations, c.a);
     int rot_a = sets[c.rep_a].rotations(loc_of_a);
-    int to_rot_a = (6 - how_a - rot_a)%4;
+    int to_rot_a = (6 - c.how_a - rot_a)%4;
     rotate_ccw(c.rep_a, to_rot_a);
     
     //We need B to have its adjoining edge to the left, position 0
     //if its position was 0, 
-    cv::Point loc_of_b = find_location(sets[c.rep_b].locations, b);
+    cv::Point loc_of_b = find_location(sets[c.rep_b].locations, c.b);
     int rot_b = sets[c.rep_b].rotations(loc_of_b);
-    int to_rot_b = (8-rot_b-how_b)%4;
+    int to_rot_b = (8-rot_b-c.how_b)%4;
     rotate_ccw(c.rep_b, to_rot_b);
     
     
     //figure out the size of the new Mats
-    loc_of_a = find_location(sets[c.rep_a].locations, a);
+    loc_of_a = find_location(sets[c.rep_a].locations, c.a);
     COMPAT_CV_MAT_SIZE size_of_a = sets[c.rep_a].locations.size;
-    loc_of_b = find_location(sets[c.rep_b].locations, b);
+    loc_of_b = find_location(sets[c.rep_b].locations, c.b);
     COMPAT_CV_MAT_SIZE size_of_b = sets[c.rep_b].locations.size;
     
     int width = std::max(size_of_a[1], loc_of_a.x - loc_of_b.x +1 +size_of_b[1]) - std::min(0, loc_of_a.x-loc_of_b.x +1);
@@ -92,31 +99,67 @@ PuzzleDisjointSet::join_context& PuzzleDisjointSet::compute_join(int a, int b, i
     sets[c.rep_b].rotations.copyTo(new_b_rots(cv::Rect(bx_offset,by_offset,size_of_b[1],size_of_b[0])));
 
 
-
+//    std::cout << "w: " << width << ", h: " << height << std::endl;
+    
     //check for overlap while combining...
     for(int i = 0; i<new_a_locs.size[0]; i++){
         for(int j=0; j<new_a_locs.size[1]; j++){
+
             //If both have a real value for a piece, it becomes impossible, reject
-            if(new_a_locs(i,j) != -1 && new_b_locs(i,j)!= -1) {
+            if(new_a_locs(i,j) != -1 && new_b_locs(i,j) != -1) {
                 if (user_params.isVerbose()) {
                     logger::stream() << "Failed to merge because of overlap" << std::endl; logger::flush();
                     merge_failures++;
                 }
-                return c;
+                return false;
             }
             
-            if(new_a_locs(i,j) == -1 && new_b_locs(i,j)!=-1){
+            
+            // Check adjoining edge matches and fail to merge if the match is low quality or impossible
+            if (edge_checker != NULL && new_b_locs(i,j) != -1 && size_of_b[0] == 1 && size_of_b[1] == 1) {
+                if (i > 0 && new_a_locs(i-1,j) != -1) {
+//                    std::cout << "b("<<i<<","<<j<<")=" << (1+new_b_locs(i,j)) << ", " 
+//                            << "a!("<<(i-1)<<","<<j<<")=" << (1+new_a_locs(i-1,j)) << ", " << std::endl;
+                    if (!edge_checker(match_check_data, new_a_locs(i-1,j), new_b_locs(i,j), (5 - new_a_rots(i-1,j))%4, (7 - new_b_rots(i,j))%4)) {
+                        match_failure();
+                        return false;
+                    }
+                }
+//                if (j > 0 && new_a_locs(i,j-1) != -1) {
+//                    std::cout << "a("<<i<<","<<(j-1)<<")=" << (1+new_a_locs(i,j-1)) << ", ";
+//                }               
+                if (i < (new_a_locs.rows-1) && new_a_locs(i+1,j) != -1) {
+//                    std::cout << "b("<<i<<","<<j<<")=" << (1+new_b_locs(i,j)) << ", " 
+//                            << "a@("<<(i+1)<<","<<j<<")=" << (1+new_a_locs(i+1,j)) << ", " << std::endl;
+                    if (!edge_checker(match_check_data, new_a_locs(i+1,j), new_b_locs(i,j), (7 - new_a_rots(i+1,j))%4, (5 - new_b_rots(i,j))%4)) {
+                        match_failure();
+                        return false;
+                    }
+                }
+                if (j < (new_a_locs.cols-1) && new_a_locs(i,j+1) != -1) {
+//                    std::cout << "b("<<i<<","<<j<<")=" << (1+new_b_locs(i,j)) << ", "
+//                            << "a#("<<i<<","<<(j+1)<<")=" << (1+new_a_locs(i,j+1)) << ", " << std::endl;
+                    if (!edge_checker(match_check_data, new_a_locs(i,j+1), new_b_locs(i,j), (4 - new_a_rots(i,j+1))%4, (6 - new_b_rots(i,j))%4)) {
+                        match_failure();
+                        return false;                        
+                    }
+                }                
+//                std::cout << "b("<<i<<","<<j<<")=" << (1+new_b_locs(i,j)) << ", ";
+            }
+
+            if(new_a_locs(i,j) == -1 && new_b_locs(i,j) !=-1){
                 new_a_locs(i,j) = new_b_locs(i,j);
                 new_a_rots(i,j) = new_b_rots(i,j);
             }
             
         }
     }
+    // std::cout << std::endl;
 
     c.new_a_locs = new_a_locs;
     c.new_a_rots = new_a_rots;
     c.joinable = true;
-    return c;
+    return true;
 }
 
 void PuzzleDisjointSet::complete_join(join_context& c) {
@@ -141,6 +184,13 @@ void PuzzleDisjointSet::complete_join(join_context& c) {
     
     //Representative is the same idea as a disjoint set datastructure
     sets[c.rep_b].representative = c.rep_a;
+}
+
+void PuzzleDisjointSet::match_failure() {
+    if (user_params.isVerbose()) {
+        logger::stream() << "Failed to merge because of low quality or impossible adjoining edge match" << std::endl; logger::flush();
+        merge_failures++;
+    }    
 }
 
 void PuzzleDisjointSet::finish() {

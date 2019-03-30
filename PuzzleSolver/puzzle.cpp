@@ -263,7 +263,9 @@ void puzzle::auto_solve(PuzzleDisjointSet& p) {
                     pieces[p2].get_id() << "-" << (e2+1) << ", score:" << i->score << " count: "  << output_id <<std::endl;
             logger::flush();
         }
-        PuzzleDisjointSet::join_context& c = p.compute_join(p1, p2, e1, e2);
+        PuzzleDisjointSet::join_context c;
+        p.init_join(c, p1, p2, e1, e2);
+        p.compute_join(c);
         if (c.joinable) {
             p.complete_join(c);
         }
@@ -287,42 +289,69 @@ void puzzle::guided_solve(PuzzleDisjointSet& p) {
             int p2 = i->edge2/4;
             int e2 = i->edge2%4;
             
-            PuzzleDisjointSet::join_context& c = p.compute_join(p1, p2, e1, e2);
-            if (c.joinable) {
-                    
-                if (p.collection_set_count() == 0) {
-                    if (guide_match(p1, p2, e1, e2)) {
-                        p.complete_join(c);
-                        break;
-                    }
-                }
-                else {
-                    if (p.is_collection_set(c.rep_a) && p.is_unmatched_set(p2)) {
-                        if (guide_match(p1, p2, e1, e2)) {
-                            p.complete_join(c);
-                            break;
-                        }
-                    }
-                    else if (p.is_collection_set(c.rep_b) && p.is_unmatched_set(p1)) {
-                        if (guide_match(p2, p1, e2, e1)) {                        
-                            PuzzleDisjointSet::join_context& c2 = p.compute_join(p2, p1, e2, e1);
-                            if (!c2.joinable) { // should never happen
-                                logger::stream() << "Join computation failed on re-ordered p1,p2: "<< pieces[p1].get_id() << "-" << (e1+1) << " with: " << 
-                                        pieces[p2].get_id() << "-" << (e2+1) <<std::endl;
-                            }
-                            else {
-                                p.complete_join(c2);
-                            }
-                            break;
-                        }
-                    }
-                }
+            PuzzleDisjointSet::join_context c;
+            p.init_join(c, p1, p2, e1, e2);
+            if (!c.joinable) {
+                i++;
+                output_id += 1;
+                continue;
+            }
+            
+            // Attempt to join if nothing has been joined yet (collection_set_count == 0), or if 
+            // one of the two rep sets is a collection set and the other is unmatched.
+            if (p.collection_set_count() == 0 || (p.is_collection_set(c.rep_a) && p.is_unmatched_set(p2))) {
+                // no-op
+            }
+            else if (p.is_collection_set(c.rep_b) && p.is_unmatched_set(p1)) {
+                // swap order so that the collection set is in rep_a
+                p.init_join(c, p2, p1, e2, e1);
+            } 
+            else {
+                i++;
+                output_id += 1;                
+                continue;
+            }
+            
+            p.compute_join(c);
 
+            if (c.joinable) {
+                std::string response = guide_match(c.a, c.b, c.how_a, c.how_b);
+                if (response == "yes") {
+                    p.complete_join(c);
+                    break;
+                }
+                else if (response == "show_set") {
+                    PuzzleDisjointSet::forest f = p.get(c.rep_a);
+                    std::cout << set_to_string(f.locations, user_params.getInitialPieceId()) << std::endl;
+                    continue;
+                }
+                else if (response == "show_rotation") {
+                    PuzzleDisjointSet::forest f = p.get(c.rep_a);
+                    std::cout << set_to_string(f.rotations, 0) << std::endl;
+                    continue;
+                }                
             }
             i++;
-            output_id += 1;
+            output_id += 1;                    
         }   
     }
+}
+
+bool match_check_function(void* data, int p1, int p2, int e1, int e2) {
+    puzzle* p = (puzzle*)data;
+    return p->check_match(p1, p2, e1, e2);
+}
+
+bool puzzle::check_match(int p1, int p2, int e1, int e2) {
+    double lscore;
+    double sscore;
+    double score = pieces[p1].edges[e1].compare3(pieces[p2].edges[e2], lscore, sscore);
+    std::cout << "check_match(" << (p1+user_params.getInitialPieceId()) << ", " << (p2+user_params.getInitialPieceId()) 
+            << ", " << e1 << ", " << e2 << ")=" << lscore << " / " << sscore << std::endl;
+    if (score == DBL_MAX || lscore > 125.0 || sscore > 800.0) {
+        return false;
+    }
+    return true;
 }
 
 //Solves the puzzle
@@ -330,8 +359,8 @@ void puzzle::solve(){
     
     load_guided_matches();
     
-    
-    PuzzleDisjointSet p(user_params, (int)pieces.size());
+    PuzzleDisjointSet p(user_params, pieces.size(), match_check_function, this);
+    // PuzzleDisjointSet p(user_params, pieces.size(), NULL, NULL);
     
     if (!user_params.isGuidedSolution()) {
         auto_solve(p);
@@ -339,10 +368,7 @@ void puzzle::solve(){
     else {
         guided_solve(p);
     }
-        
 
-
-    
     p.finish();
     
     if(p.in_one_set()){
@@ -420,27 +446,36 @@ std::string get_match_id(int initial_piece_id, int p1, int p2, int e1, int e2) {
     return idstream.str();    
 }
 
-bool puzzle::guide_match(int p1, int p2, int e1, int e2) {
+std::string puzzle::guide_match(int p1, int p2, int e1, int e2) {
     
     std::string id = get_match_id(user_params.getInitialPieceId(), p1, p2, e1, e2);
     
     std::map<std::string,std::string>::iterator it = guided_matches.find(id);
     if (it != guided_matches.end()) {
-        return (it->second == "yes");
+        return it->second;
     }
     
     if (!user_params.isGuidedSolution()) {
-        return true;  // true results in the default automatic solution behavior
+        return "yes";  // "yes" results in the default automatic solution behavior
     }
     
-    std::cout << "Does piece " << (p1 + user_params.getInitialPieceId()) << " fit to " << (p2 + user_params.getInitialPieceId()) << " ? " << std::flush;
+    double lscore;
+    double sscore;
+    double score = pieces[p1].edges[e1].compare3(pieces[p2].edges[e2], lscore, sscore);
+    
+    std::cout << "Does piece " << (p1 + user_params.getInitialPieceId()) 
+            << " fit to " << (p2 + user_params.getInitialPieceId()) 
+            << " (scores: " << lscore << " / " << sscore << ")"
+            << " ? " << std::flush;
     
     std::string response = guided_match(pieces[p1], pieces[p2], e1, e2, user_params);
     std::cout << response << std::endl;
-    
+
+    if (response != "yes" &&  response != "no") {
+        return response;
+    }
     guided_matches[id] = response;
     
-    bool match = (response == "yes");
 
     std::string filename = get_guided_matches_filename(user_params);
     std::ofstream ostream;
@@ -452,17 +487,12 @@ bool puzzle::guide_match(int p1, int p2, int e1, int e2) {
     
     std::time_t time = std::time(NULL);
     std::tm tm = *std::localtime(&time);
-    ostream << std::put_time(&tm, "%a_%F_%T") << (match ? " yes " : "  no ") << id << "\n" << std::flush;
+    ostream << std::put_time(&tm, "%a_%F_%T") << " " << response << " " << id << "\n" << std::flush;
     ostream.close();
-    return match;
+    return response;
 }
 
-// Generates and displays the solution as text (grid of piece IDs).  The text is also saved to 
-// <solution>.txt in the output directory.  The numbers are 1-based instead of zero-based so
-// that they correspond to the piece IDs.
-void puzzle::save_solution_text() {
-    if(!solved) solve();
-    
+std::string puzzle::set_to_string(cv::Mat_<int> set, int offset) {
     std::stringstream stream;
     
     int width = 2;
@@ -474,12 +504,12 @@ void puzzle::save_solution_text() {
         width = 4;
     }
     
-    for(int row = 0; row < solution.rows; ++row) {
-        int* p = (int*)solution.ptr(row);
-        for(int col = 0; col < solution.cols; ++col) {
+    for(int row = 0; row < set.rows; ++row) {
+        int* p = (int*)set.ptr(row);
+        for(int col = 0; col < set.cols; ++col) {
             int value = *p++;
             if (value >= 0) {
-                stream << std::setw(width) << (value + user_params.getInitialPieceId());
+                stream << std::setw(width) << (value + offset);
             }
             else {
                 stream << std::setw(width) << "";
@@ -489,11 +519,20 @@ void puzzle::save_solution_text() {
         stream << std::endl;
     }
     
-    stream << std::endl;
+    return stream.str();    
+}
+
+// Generates and displays the solution as text (grid of piece IDs).  The text is also saved to 
+// <solution>.txt in the output directory.  The numbers are 1-based instead of zero-based so
+// that they correspond to the piece IDs.
+void puzzle::save_solution_text() {
+    if(!solved) solve();
     
-    std::string solution_text = stream.str();
+    std::string solution_text = set_to_string(solution, user_params.getInitialPieceId());
     logger::stream() << solution_text << std::endl;
     logger::flush();
+    
+    logger::stream() << "\nrotations:\n" << set_to_string(solution_rotations, 0) << std::endl;
       
 }
 
