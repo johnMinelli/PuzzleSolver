@@ -35,17 +35,21 @@ private:
     std::vector<match_score> matches;
     std::vector<piece>  pieces;
     std::map<std::string,std::string> guided_matches;
+    std::map<std::string,std::string> boundary_edges;
     cv::Mat_<int> solution;
     cv::Mat_<int> solution_rotations;    
     std::vector<piece> extract_pieces();
     void print_edges();
     std::string edgeType_to_s(edgeType e);
     void auto_solve(PuzzleDisjointSet& p);
+    void load_guided_matches();
+    void load_boundary_edges();
+    void set_boundary_edge(int p1, int e1);
+    bool is_boundary_edge(int p1, int e1);
     void guided_solve(PuzzleDisjointSet& p);
     std::string set_to_string(cv::Mat_<int> set, int offset);
 public:
     puzzle(params& userParams);
-    void load_guided_matches();
     std::string guide_match(int p1, int e1, int p2, int e2);    
     bool check_match(int p1, int e1, int p2, int e2);    
     void fill_costs();

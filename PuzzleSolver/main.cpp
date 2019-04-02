@@ -75,7 +75,8 @@ int main(int argc, char * argv[])
       ("v,verbose", "Verbose output", cxxopts::value<bool>()->default_value("false"))
       ("h,help", "Display this help message")
       ("s,solve", "Solve the puzzle after processing the input images and extracting pieces and edges", cxxopts::value<bool>()->default_value("false"))
-      ("g,guided", "Enable interactive solution mode", cxxopts::value<bool>()->default_value("false"))            
+      ("g,guided", "Enable interactive solution mode", cxxopts::value<bool>()->default_value("false"))  
+      ("w,work-on", "In guided solution mode, start solving with this piece number", cxxopts::value<int>()->default_value("-1"))
       ("dont-solve", "Skip finding the solution (e.g., for a demo which normally implies --solve)", cxxopts::value<bool>()->default_value("false"))
       ("n,solution-name", "Basename for solution text/image/log files written to the output directory", cxxopts::value<std::string>()->default_value("solution"))      
       ("e,estimated-size", "Estimated piece size", cxxopts::value<uint>()->default_value("200"))
@@ -89,6 +90,8 @@ int main(int argc, char * argv[])
       ("c,corners-quality", "Corner quality warning threshold", cxxopts::value<uint>()->default_value("300"))              
       ("a,adjust-corners","Show GUI corner adjuster for each piece where its corner quality exceeds the corners quality threshold", cxxopts::value<bool>()->default_value("false"))
       ("gui-scale","Initial scale factor for images shown in GUI windows",  cxxopts::value<float>()->default_value("1.0"))
+      ("lscore-limit","Limit of lscore values auto accepted as matches", cxxopts::value<float>()->default_value("125.0"))            
+      ("sscore-limit","Limit of sscore values auto accepted as matches", cxxopts::value<float>()->default_value("2000.0"))                        
       ("save-all", "Save all images (originals, contours, b&w, color, corners, edges)", cxxopts::value<bool>()->default_value("false"))
       ("save-originals", "Save original images", cxxopts::value<bool>()->default_value("false"))                        
       ("save-contours", "Save contour images", cxxopts::value<bool>()->default_value("false"))            
@@ -188,6 +191,7 @@ int main(int argc, char * argv[])
     }
     user_params.setVerbose(result["verbose"].as<bool>());
     user_params.setSolutionFileBasename(result["solution-name"].as<std::string>());
+    user_params.setWorkOnPiece(result["work-on"].as<int>());
     user_params.setMedianBlurKSize(result["median-blur-ksize"].as<uint>());
     user_params.setPieceOrder(result["order"].as<std::string>());
     user_params.setInitialPieceId(result["initial-piece-id"].as<uint>());
@@ -196,6 +200,8 @@ int main(int argc, char * argv[])
     user_params.setMinCornersQuality(result["corners-quality"].as<uint>());  
     user_params.setAdjustingCorners(result["adjust-corners"].as<bool>());
     user_params.setGuiScale(result["gui-scale"].as<float>());
+    user_params.setLScoreLimit(result["lscore-limit"].as<float>());
+    user_params.setSScoreLimit(result["sscore-limit"].as<float>());  
     user_params.setSaveAll(result["save-all"].as<bool>());
     user_params.setSavingOriginals(result["save-originals"].as<bool>());    
     user_params.setSavingContours(result["save-contours"].as<bool>());        

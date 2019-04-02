@@ -289,7 +289,7 @@ public:
         
         render();
 
-        std::string result;
+        std::string command;
         
         bool done = false;
         do {
@@ -297,25 +297,33 @@ public:
             // std::cout << c << std::endl;
             switch (c) {
                 case -1:  // User probably clicked on the "x" in the window title bar
-                // case 13:  // Return key
-                // case 141: // Enter key
-                case 'n': // "next"
-                case 'q': // "quit"
                     done = true;
-                    result = "no";
+                    command = GM_COMMAND_X_CLOSE;
+                    break;
+                case 'n':
+                    done = true;
+                    command = GM_COMMAND_NO;
                     break;
                 case 'y':
                     done = true;
-                    result = "yes";
+                    command = GM_COMMAND_YES;
                     break;
                 case 's':
                     done = true;
-                    result = "show_set";
+                    command = GM_COMMAND_SHOW_SET;
                     break;
                 case 'r':
                     done = true;
-                    result = "show_rotation";
-                    break;                    
+                    command = GM_COMMAND_SHOW_ROTATION;
+                    break;  
+                case 'w':
+                    done = true;
+                    command = GM_COMMAND_WORK_ON_SET;
+                    break;
+                case 'b':
+                    done = true;
+                    command = GM_COMMAND_MARK_BOUNDARY;
+                    break;
                 case 'c':
                     color = !color;
                     render();
@@ -325,40 +333,21 @@ public:
                     pieces = !pieces;
                     edges = !pieces;
                     render();
-                    break;                    
-//                case 'm':
-//                    margin = (margin + 25) % 50;
-//                    std::cout << "Margin is now " << margin << std::endl;
-//                    render();
-//                    break;
-//                case ',':
-//                    e1 = (e1+1)%4;
-//                    std::cout << "E1 is now " << e1 << std::endl;
-//                    render();
-//                    break;
-//                case '.':
-//                    e2 = (e2+1)%4;
-//                    std::cout << "E2 is now " << e2 << std::endl;
-//                    render();
-//                    break;       
+                    break;                          
                 case 'x':
-                    p2xoff -= 1;
-//                    std::cout << "p2xoff is now " << p2xoff << std::endl;
+                    p2xoff += 1;
                     render();
                     break;
                 case 'X':
-                    p2xoff += 1;
-//                    std::cout << "p2xoff is now " << p2xoff << std::endl;
+                    p2xoff -= 1;
                     render();
                     break;       
                 case 'z':
                     p2yoff -= 1;
-//                    std::cout << "p2yoff is now " << p2yoff << std::endl;
                     render();
                     break;
                 case 'Z':
                     p2yoff += 1;
-//                    std::cout << "p2yoff is now " << p2yoff << std::endl;
                     render();
                     break;                      
                 case '-':
@@ -380,7 +369,7 @@ public:
             // Ignore
         }
         
-        return result;
+        return command;
     }
     
     

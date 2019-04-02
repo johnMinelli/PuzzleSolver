@@ -209,6 +209,30 @@ void params::setAdjustingCorners(bool editingCorners) {
     this->editingCorners = editingCorners;
 }
 
+float params::getLScoreLimit() const {
+    return lScoreLimit;
+}
+
+void params::setLScoreLimit(float lScoreLimit) {
+    this->lScoreLimit = lScoreLimit;
+}
+
+float params::getSScoreLimit() const {
+    return sScoreLimit;
+}
+
+void params::setSScoreLimit(float sScoreLimit) {
+    this->sScoreLimit = sScoreLimit;
+}
+
+int params::getWorkOnPiece() const {
+    return workOnPiece;
+}
+
+void params::setWorkOnPiece(int workOnPiece) {
+    this->workOnPiece = workOnPiece;
+}
+    
 inline const char * const bool_to_string(bool b)
 {
   return b ? "true" : "false";
@@ -221,7 +245,8 @@ std::string params::to_string() const {
     stream << "output dir ............. " << this->getOutputDir() << std::endl;
     stream << "solution name .......... " << this->getSolutionFileBasename() << std::endl;
     stream << "solve puzzle ........... " << bool_to_string(this->isSolving()) << std::endl;    
-    stream << "guided solution mode ... " << bool_to_string(this->isGuidedSolution()) << std::endl;        
+    stream << "guided solution mode ... " << bool_to_string(this->isGuidedSolution()) << std::endl;    
+    stream << "work on piece .......... " << this->getWorkOnPiece() << std::endl;
     stream << "estimated piece size ... " << this->getEstimatedPieceSize() << std::endl;
     stream << "threshold .............. " << this->getThreshold() << std::endl;
     stream << "median filter .......... " << bool_to_string(this->isUsingMedianFilter()) << std::endl;
@@ -231,7 +256,9 @@ std::string params::to_string() const {
     stream << "find corners block size  " << this->getFindCornersBlockSize() << std::endl;
     stream << "min corners quality .... " << this->getMinCornersQuality() << std::endl;
     stream << "adjust corners ......... " << bool_to_string(this->isAdjustingCorners()) << std::endl;          
-    stream << "gui scale .............. " << this->getGuiScale() << std::endl;     
+    stream << "gui scale .............. " << this->getGuiScale() << std::endl;   
+    stream << "lscore limit ........... " << this->getLScoreLimit() << std::endl;   
+    stream << "sscore limit ........... " << this->getSScoreLimit() << std::endl;       
     stream << "save original images ... " << bool_to_string(this->isSavingOriginals()) << std::endl;
     stream << "save contour images .... " << bool_to_string(this->isSavingContours()) << std::endl;
     stream << "save b&w images ........ " << bool_to_string(this->isSavingBlackWhite()) << std::endl;    

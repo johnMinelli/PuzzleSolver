@@ -56,6 +56,7 @@ public:
     void complete_join(join_context& context);
     void match_failure();
     int find(int a);
+    std::vector<int> get_collection_sets();
     // returns true if the set is a matched set that is unmatched with any other sets
     bool is_collection_set(int rep);
     // returns true of the set is unmatched

@@ -280,6 +280,19 @@ void puzzle::guided_solve(PuzzleDisjointSet& p) {
     int output_id=0;
     
     bool done = false;
+    int work_on = -1;
+    
+    if (user_params.getWorkOnPiece() != -1) {
+        work_on = user_params.getWorkOnPiece() - user_params.getInitialPieceId();
+        
+        if (work_on < 0 || work_on >= pieces.size()) {
+            logger::stream() << "Error, 'work on' piece number " << user_params.getWorkOnPiece() << " is out of range.  Expected a value between " 
+                    << user_params.getInitialPieceId() << " and " << (pieces.size() + user_params.getInitialPieceId() - 1) << std::endl;
+            logger::flush();
+            exit(1);
+        }
+    }
+    
     
     while (!p.in_one_set()) {
         std::vector<match_score>::iterator i= matches.begin();
@@ -291,15 +304,28 @@ void puzzle::guided_solve(PuzzleDisjointSet& p) {
             
             PuzzleDisjointSet::join_context c;
             p.init_join(c, p1, p2, e1, e2);
-            if (!c.joinable) {
+            if (!c.joinable || is_boundary_edge(p1, e1) || is_boundary_edge(p2, e2)) {
                 i++;
                 output_id += 1;
                 continue;
             }
             
+            if (work_on != -1) {
+                if (work_on == c.rep_a) {
+                    // no-op
+                }
+                else if (work_on == c.rep_b) {
+                    p.init_join(c, p2, p1, e2, e1);
+                }
+                else {
+                    i++;
+                    output_id += 1;
+                    continue;
+                }
+            }
             // Attempt to join if nothing has been joined yet (collection_set_count == 0), or if 
             // one of the two rep sets is a collection set and the other is unmatched.
-            if (p.collection_set_count() == 0 || (p.is_collection_set(c.rep_a) && p.is_unmatched_set(p2))) {
+            else if (p.collection_set_count() == 0 || (p.is_collection_set(c.rep_a) && p.is_unmatched_set(p2))) {
                 // no-op
             }
             else if (p.is_collection_set(c.rep_b) && p.is_unmatched_set(p1)) {
@@ -316,20 +342,71 @@ void puzzle::guided_solve(PuzzleDisjointSet& p) {
 
             if (c.joinable) {
                 std::string response = guide_match(c.a, c.b, c.how_a, c.how_b);
-                if (response == "yes") {
+                if (response == GM_COMMAND_YES) {
                     p.complete_join(c);
                     break;
                 }
-                else if (response == "show_set") {
+                else if (response == GM_COMMAND_SHOW_SET) {
                     PuzzleDisjointSet::forest f = p.get(c.rep_a);
                     std::cout << set_to_string(f.locations, user_params.getInitialPieceId()) << std::endl;
                     continue;
                 }
-                else if (response == "show_rotation") {
+                else if (response == GM_COMMAND_SHOW_ROTATION) {
                     PuzzleDisjointSet::forest f = p.get(c.rep_a);
                     std::cout << set_to_string(f.rotations, 0) << std::endl;
                     continue;
-                }                
+                }   
+                else if (response == GM_COMMAND_MARK_BOUNDARY) {
+                    set_boundary_edge(c.a, c.how_a);
+                    continue;
+                }
+                else if (response == GM_COMMAND_WORK_ON_SET) {
+                    
+                    std::cout << "Current collector sets are: ";
+                    for (uint j = 0; j < p.get_collection_sets().size(); j++) {
+                        if (j > 0) {
+                            std::cout << ", ";
+                        }
+                        std::cout << (p.get_collection_sets()[j] + user_params.getInitialPieceId());
+                    }
+                    std::cout << std::endl;
+                    
+                    int piece_number;
+                    bool read_success = false;
+                    
+                    do {
+                        std::cout << "Enter a piece number: " << std::flush;
+                        std::cin >> piece_number;
+                        
+                        if (std::cin.fail()) {
+                            std::cin.clear();
+                            std::cin.ignore(999,'\n');
+                            std::cout << "Invalid input" << std::endl;
+                            continue;
+                        }
+                        
+                        int work_on_id = piece_number - user_params.getInitialPieceId();
+                        
+                        if (work_on_id < 0 || work_on_id >= pieces.size()) {
+                            std::cout << "Error, " << piece_number << " is out of range.  Expected a value between " 
+                                    << user_params.getInitialPieceId() << " and " << (pieces.size() + user_params.getInitialPieceId() - 1) << std::endl;
+                        }
+                        else {
+                            work_on = p.find(work_on_id);
+                            std::cout << "Working on " << (work_on + user_params.getInitialPieceId());
+                            if (work_on != work_on_id) {
+                                std::cout << " (collector set for " << piece_number << ")";
+                            }
+                            std::cout << std::endl;
+                            read_success = true;
+                        }
+                    } while (!read_success);
+                    continue;
+                }
+                else if (response == GM_COMMAND_X_CLOSE) {
+                    // Ignore
+                    continue;
+                }
             }
             i++;
             output_id += 1;                    
@@ -346,9 +423,11 @@ bool puzzle::check_match(int p1, int p2, int e1, int e2) {
     double lscore;
     double sscore;
     double score = pieces[p1].edges[e1].compare3(pieces[p2].edges[e2], lscore, sscore);
-    std::cout << "check_match(" << (p1+user_params.getInitialPieceId()) << ", " << (p2+user_params.getInitialPieceId()) 
-            << ", " << e1 << ", " << e2 << ")=" << lscore << " / " << sscore << std::endl;
-    if (score == DBL_MAX || lscore > 125.0 || sscore > 800.0) {
+    if (user_params.isVerbose()) {
+        std::cout << "check_match(" << (p1+user_params.getInitialPieceId()) << ", " << (p2+user_params.getInitialPieceId()) 
+                << ", " << e1 << ", " << e2 << ")=" << lscore << " / " << sscore << std::endl;
+    }
+    if (score == DBL_MAX || lscore > user_params.getLScoreLimit() || sscore > user_params.getSScoreLimit()) {
         return false;
     }
     return true;
@@ -358,6 +437,7 @@ bool puzzle::check_match(int p1, int p2, int e1, int e2) {
 void puzzle::solve(){
     
     load_guided_matches();
+    load_boundary_edges();
     
     PuzzleDisjointSet p(user_params, pieces.size(), match_check_function, this);
     // PuzzleDisjointSet p(user_params, pieces.size(), NULL, NULL);
@@ -388,10 +468,72 @@ void puzzle::solve(){
     }
 }
 
+std::string get_boundary_edges_filename(params& user_params) {
+    return user_params.getOutputDir() + "boundary-edges.dat";
+}
+
+void puzzle::load_boundary_edges() {
+    std::string filename = get_boundary_edges_filename(user_params);
+    std::ifstream istream;
+    istream.open(filename, std::ifstream::in);
+    if (istream.fail()) {
+        return;
+    }
+
+    std::string date;
+    std::string id;
+    
+    while (true) {
+
+        istream >> date;
+        istream >> id;
+        if (istream.eof()) {
+            break;
+        }
+        
+        boundary_edges[id] = "yes";
+    }
+    
+    istream.close();
+}
+
+std::string get_boundary_edge_id(int initial_piece_id, int p1, int e1) {
+    int id_p1 = p1 + initial_piece_id;
+    int id_e1 = (e1+1);
+
+    std::stringstream idstream;
+    idstream << id_p1 << "-" << id_e1;
+    return idstream.str();
+}
+
+void puzzle::set_boundary_edge(int p1, int e1) {
+    
+    std::string id = get_boundary_edge_id(user_params.getInitialPieceId(), p1, e1);
+    boundary_edges[id] = "yes";
+    
+
+    std::string filename = get_boundary_edges_filename(user_params);
+    std::ofstream ostream;
+    ostream.open(filename, std::ofstream::out | std::ofstream::app);
+    if (ostream.fail()) {
+        std::cerr << "Failed to open " << filename << " for writing" << std::endl;
+        exit(1);
+    }
+    
+    std::time_t time = std::time(NULL);
+    std::tm tm = *std::localtime(&time);
+    ostream << std::put_time(&tm, "%a_%F_%T") << " " << id << "\n" << std::flush;
+    ostream.close();    
+}
+
+bool puzzle::is_boundary_edge(int p1, int e1) {
+    std::string id = get_boundary_edge_id(user_params.getInitialPieceId(), p1, e1);    
+    std::map<std::string,std::string>::iterator it = boundary_edges.find(id);
+    return it != boundary_edges.end();
+}
+
 std::string get_guided_matches_filename(params& user_params) {
-    std::stringstream fnstream;
-    fnstream << user_params.getOutputDir() << "guided-matches.dat";
-    return fnstream.str();    
+    return user_params.getOutputDir() + "guided-matches.dat";
 }
 
 void puzzle::load_guided_matches() {

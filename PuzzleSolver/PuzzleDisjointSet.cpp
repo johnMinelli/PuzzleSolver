@@ -207,6 +207,10 @@ int PuzzleDisjointSet::find(int a){
     return rep;
 }
 
+std::vector<int> PuzzleDisjointSet::get_collection_sets() {
+    return csets;
+}
+
 bool PuzzleDisjointSet::is_collection_set(int rep) {
     std::vector<int>::iterator i = std::find(csets.begin(), csets.end(), rep);
     return i != csets.end();
