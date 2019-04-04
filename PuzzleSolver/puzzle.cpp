@@ -96,7 +96,7 @@ std::vector<piece> puzzle::extract_pieces() {
         utils::filter(bw,2);
     }
 
-    uint unique_piece_id = user_params.getInitialPieceId();
+    uint piece_number = user_params.getInitialPieceId();
     
 
     //For each input image
@@ -174,9 +174,8 @@ std::vector<piece> puzzle::extract_pieces() {
             std::stringstream idstream;
 
             char id_buffer[80];
-            snprintf(id_buffer, 80, "%03d-%03d-%04d", i+1, j+1, unique_piece_id);
+            snprintf(id_buffer, 80, "%03d-%03d-%04d", i+1, j+1, piece_number);
             std::string piece_id(id_buffer);
-            unique_piece_id += 1;
             
             cv::Rect bounds = contour_mgr.contours[j].bounds;
             std::vector<cv::Point> points = contour_mgr.contours[j].points;
@@ -203,8 +202,10 @@ std::vector<piece> puzzle::extract_pieces() {
             mini_color = mini_color.clone();
             mini_bw = mini_bw.clone();
             
-            piece p(piece_id, mini_color, mini_bw, user_params);
+            piece p(piece_number, piece_id, mini_color, mini_bw, user_params);
             pieces.push_back(p);
+            
+            piece_number += 1;
             
         }
     }

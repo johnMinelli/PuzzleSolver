@@ -1,7 +1,7 @@
 PuzzleSolver
 ============
 
-This is a program that uses computer vision techniques to solve jigsaw puzzles using the shapes of the edges. It works best with fully-interlocking puzzles with rectangular pieces of approximately the same size.
+This is a program that uses computer vision techniques to solve jigsaw puzzles using the shapes of the edges. It works best with fully-interlocking puzzles with pieces of approximately the same size.  It can be used to solve puzzles from scratch, or help solve a partially completed puzzles.
 
 
 # Installing OpenCV
@@ -55,15 +55,19 @@ make clean && make
 
 PuzzleSolver can be used on all pieces of a puzzle or a subset of pieces (i.e., the loose pieces of a partially completed puzzle).
 
-1. Number the back of the puzzle pieces.
-2. Clean the glass to your flatbed scanner to remove dust, lint, and debris.
-3. Place as many puzzle pieces face-up on a flatbed scanner as will fit within the scan area, such that none of the pieces are touching the edges of the scan area, and not touching each other4.  Leave the scanner lid open and turn off the lights when scanning... a black background in the resulting images is ideal (consider making the scans at night if you can't get the room dark enough). Scan at 300dpi. Repeat until all puzzle pieces have been scanned once.
-5. Move the scanner images into a directory containing only the scanner images (this will be the "input directory").
-6. Run PuzzleSolver, giving it the name of the input directory and the name of an output directory.  The output directory will be created if it doesn't already exist. Do not use the same directory for input and output.
-7. If you get warnings about corner quality, or not enough corners detected for a piece, try re-running with different values for `--estimated-size`, `--threshold`, `--corners-blocksize`, `--median-blur-ksize`, and/or `--filter`.  If you use the `--edit-corners` option, a GUI will be displayed for each piece where the corners quality is higher than the minimum corners quality threshold (`--corners-quality`).  The GUI allows the piece corner locations to be adjusted manually.  Try to reduce the number of corner issues using other options first before using `--edit-corners`.
-8. For aditional troubleshooting, use the `--save-xxx` options to generate intermediate image files.
-9. When you are ready solve the puzzle, add the --solve option.
-10. Solutions are written to solution.txt, and if an image can be generated, solution.png.  The solution image will be displayed in a popup window if possible.  Press the 'r' key one or more times to rotate the image by 90 degrees each time.  Press the 'q' key to quit.
+The program offers two solution modes -- "automatic" and "guided".  Both modes require some some calibration via the command line arguments before entering the solution phase.  Automatic mode works well to solve an entire puzzle that has a small number of large pieces (about 100 pieces or less).  Guided solution mode is best for puzzles with large numbers of pieces whether or not you want to solve the puzzle from scratch or finish a partially completed puzzle.
+
+* Separate any matched sets of pieces where the number of joined pieces is low (less than five).
+* Number the back of the loose puzzle pieces sequentially starting with 1. 
+* Clean the glass to your flatbed scanner to remove dust, lint, and debris.
+* Place 20 to 30 puzzle pieces face-up on a flatbed scanner, but no more than will comfortably fit in the scan area, and make sure that none of the pieces are touching the edges of the scan area, and not touching each other.  For the loose pieces of a partially completed puzzle, or if you will be guided solution mode, order the pieces.
+* Leave the scanner lid open and turn off the lights when scanning... a black background in the resulting images is ideal (consider making the scans at night if you can't get the room dark enough). Scan at 300dpi. Repeat until all puzzle pieces have been scanned once.
+* Move the scanner images into a directory containing only the scanner images (this will be the "input directory").
+* Run PuzzleSolver, giving it the name of the input directory and the name of an output directory.  The output directory will be created if it doesn't already exist. Do not use the same directory for input and output.
+* If you get warnings about corner quality, or not enough corners detected for a piece, try re-running with different values for `--estimated-size`, `--threshold`, `--corners-blocksize`, `--median-blur-ksize`, and/or `--filter`.  If you use the `--edit-corners` option, a GUI will be displayed for each piece where the corners quality is higher than the minimum corners quality threshold (`--corners-quality`).  The GUI allows the piece corner locations to be adjusted manually.  Try to reduce the number of corner issues using other options first before using `--edit-corners`.
+* For aditional troubleshooting, use the `--save-xxx` options to generate intermediate image files.
+* When you are ready solve the puzzle, add the --solve option.
+* Solutions are written to solution.txt, and if an image can be generated, solution.png.  The solution image will be displayed in a popup window if possible.  Press the 'r' key one or more times to rotate the image by 90 degrees each time.  Press the 'q' key to quit.
 
 ## Tips
 

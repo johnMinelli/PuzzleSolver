@@ -63,7 +63,7 @@ public:
         wns << p1.get_id() << "-" << e1 << " __ " << p2.get_id() << "-" << e2;
         window_name = wns.str();
         
-
+        
     }
     
     cv::Mat bw_to_color(cv::Mat bw) {
@@ -207,34 +207,6 @@ public:
         return edge_contour_tx;
     }
     
-    /**
-     * Draws a rectangle with rounded corners, the parameters are the same as in the OpenCV function @see rectangle();
-     * @param cornerRadius A positive int value defining the radius of the round corners.
-     */
-    void rounded_rectangle( cv::Mat& src, cv::Point topLeft, cv::Point bottomRight, const cv::Scalar lineColor, const int thickness, const int lineType , const int cornerRadius)
-    {
-        /* corners:
-         * p1 - p2
-         * |     |
-         * p4 - p3
-         */
-        cv::Point p1 = topLeft;
-        cv::Point p2 = cv::Point (bottomRight.x, topLeft.y);
-        cv::Point p3 = bottomRight;
-        cv::Point p4 = cv::Point (topLeft.x, bottomRight.y);
-        
-        // draw straight lines
-        cv::line(src, cv::Point (p1.x+cornerRadius,p1.y), cv::Point (p2.x-cornerRadius,p2.y), lineColor, thickness, lineType);
-        cv::line(src, cv::Point (p2.x,p2.y+cornerRadius), cv::Point (p3.x,p3.y-cornerRadius), lineColor, thickness, lineType);
-        cv::line(src, cv::Point (p4.x+cornerRadius,p4.y), cv::Point (p3.x-cornerRadius,p3.y), lineColor, thickness, lineType);
-        cv::line(src, cv::Point (p1.x,p1.y+cornerRadius), cv::Point (p4.x,p4.y-cornerRadius), lineColor, thickness, lineType);
-        
-        // draw arcs
-        cv::ellipse( src, p1+cv::Point(cornerRadius, cornerRadius), cv::Size( cornerRadius, cornerRadius ), 180.0, 0, 90, lineColor, thickness, lineType );
-        cv::ellipse( src, p2+cv::Point(-cornerRadius, cornerRadius), cv::Size( cornerRadius, cornerRadius ), 270.0, 0, 90, lineColor, thickness, lineType );
-        cv::ellipse( src, p3+cv::Point(-cornerRadius, -cornerRadius), cv::Size( cornerRadius, cornerRadius ), 0.0, 0, 90, lineColor, thickness, lineType );
-        cv::ellipse( src, p4+cv::Point(cornerRadius, -cornerRadius), cv::Size( cornerRadius, cornerRadius ), 90.0, 0, 90, lineColor, thickness, lineType );
-    }
 
     void render() {
      
@@ -262,8 +234,13 @@ public:
         cv::Point top = get_top(txc);
         render_piece(p2, e2, 2, rendered, p2xoff, p2yoff, padded_dim, &top);
 
+        std::stringstream title_stream;
+        title_stream << "Does piece " << p1.get_number()
+            << " fit to " << p2.get_number()
+            << " ? ";
+        cv::putText(rendered, title_stream.str(), cv::Point(25,25),
+                        cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(0, 255, 255), 1, COMPAT_CV_LINE_AA); 
         
-//        rounded_rectangle(rendered, cv::Point(10,10), cv::Point(80,50), cv::Scalar(0,150,255), 1, COMPAT_CV_LINE_AA, 10);
         
         cv::imshow(window_name, rendered);
     }
@@ -278,7 +255,7 @@ public:
         }
         scale_factor = new_scale;
         render();
-        std::cout << "Scale factor is now " << scale_factor << std::endl;
+//        std::cout << "Scale factor is now " << scale_factor << std::endl;
     }
     
     std::string edit() {
@@ -356,7 +333,25 @@ public:
                 case '+':
                 case '=':
                     adjust_scale(0.25);
-                    break;                    
+                    break; 
+                case 'h':
+                case '?':
+                    std::cout << "Keyboard commands:" << std::endl
+                            << "KEY   MEANING" << std::endl
+                            << "n     no, this is not a valid match" << std::endl
+                            << "y     yes, this is a valid match" << std::endl
+                            << "c     toggle between color and black and white" << std::endl
+                            << "e     toggle between showing the pieces and the matched edge outlines" << std::endl
+                            << "p     same as pressing key 'e'" << std::endl                            
+                            << "-/=   decrease/increase the rendering scale of the pieces" << std::endl
+                            << "x/X   adjust the x-offset between the matched pieces" << std::endl
+                            << "z/Z   adjust the y-offset between the matched pieces" << std::endl                            
+                            << "s     show the pieces in the current collection set" << std::endl
+                            << "r     show the piece rotations of the current collection set" << std::endl                            
+                            << "w     work on a different collection set" << std::endl                                                        
+                            << "b     mark the right edge of the left-hand piece as a boundary" << std::endl
+                            ;
+                    break;
                 default:
                     break;
             }
