@@ -46,10 +46,8 @@ std::vector<std::vector<cv::Point>::iterator> find_all_in(std::vector<cv::Point>
 piece::piece(uint piece_number, std::string id, cv::Mat color, cv::Mat black_and_white, params& _user_params) : user_params(_user_params) {
     this->piece_number = piece_number;
     this->id = id;
-//    edges = std::vector<edge>();
     this->full_color = color;
     this->bw = black_and_white;
-    process();
 }
 
 uint piece::get_number() {

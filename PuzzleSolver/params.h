@@ -36,9 +36,10 @@ private:
     uint findCornersBlockSize;
     bool editingCorners;
     float guiScale;
-    float lScoreLimit;
-    float sScoreLimit;
+    float cscoreLimit;
+    float escoreLimit;
     int workOnPiece;
+    bool verifyingContours;
 
 public:
     params();
@@ -141,17 +142,21 @@ public:
 
     void setAdjustingCorners(bool editingCorners);
     
-    float getLScoreLimit() const;
+    float getCscoreLimit() const;
 
-    void setLScoreLimit(float lScoreLimit);
+    void setCscoreLimit(float cscoreLimit);
 
-    float getSScoreLimit() const;
+    float getEscoreLimit() const;
 
-    void setSScoreLimit(float sScoreLimit);
+    void setEscoreLimit(float escoreLimit);
     
     int getWorkOnPiece() const;
 
     void setWorkOnPiece(int workOnPiece);
+    
+    bool isVerifyingContours() const;
+
+    void setVerifyingContours(bool verifyingContours);
     
     std::string to_string() const;
 

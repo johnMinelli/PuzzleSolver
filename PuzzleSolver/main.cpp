@@ -62,12 +62,12 @@ int main(int argc, char * argv[])
     params user_params;
     
     std::map<std::string,demo*> demos;
-    register_demo(demos, "toy-story-color", "Toy Story", 200, 22, true, "48 pieces, estimated-size=200, threshold=22, filter()");
-    register_demo(demos, "toy-story-back", "Toy Story back", 200, 50, false, "48 pieces, estimated-size=200, threshold=50, median_filter()");
-    register_demo(demos, "angry-birds-color", "Angry Birds/color", 300, 30, false, "24 pieces, estimated-size=300, threshold=30, median_filter()");
-    register_demo(demos, "angry-birds-scanner-open", "Angry Birds/Scanner Open", 300, 30, false, "24 pieces, estimated-size=300, threshold=30, median_filter()");
-    register_demo(demos, "horses", "horses", 380, 50, false, "104 pieces, estimated-size=380, threshold=50, median_filter()");
-    register_demo(demos, "horses-numbered", "horses numbered", 380, 50, false, "104 pieces, estimated-size=380, threshold=50, median_filter()");
+    register_demo(demos, "toy-story-color", "Toy Story", 200, 22, true, "48 pieces, --estimated-size 200 --threshold 22 --filter");
+    register_demo(demos, "toy-story-back", "Toy Story back", 200, 50, false, "48 pieces, --estimated-size 200 --threshold 50");
+    register_demo(demos, "angry-birds-color", "Angry Birds/color", 300, 30, false, "24 pieces, --estimated-size 300 --threshold 30");
+    register_demo(demos, "angry-birds-scanner-open", "Angry Birds/Scanner Open", 300, 30, false, "24 pieces, --estimated-size 300 --threshold 30");
+    register_demo(demos, "horses", "horses", 380, 50, false, "104 pieces, --estimated-size 380 --threshold 50");
+    register_demo(demos, "horses-numbered", "horses numbered", 380, 50, false, "104 pieces, --estimated-size 380 --threshold 50");
 
     cxxopts::Options options("PuzzleSolver", std::string("Version: ") + std::string(VERSION) + std::string("\nSolve jigsaw puzzles using the shapes of the piece edges.\n"));
 
@@ -83,15 +83,16 @@ int main(int argc, char * argv[])
       ("t,threshold", "Threshold value used when converting color images to b&w.  Min: 0, max: 255.", cxxopts::value<uint>()->default_value("30"))
       ("f,filter", "Use filter() instead of median_filter()", cxxopts::value<bool>()->default_value("false"))
       ("m,median-blur-ksize", "Median blur ksize value. Must be odd and greater than 1, e.g.: 3, 5, 7 ...", cxxopts::value<uint>()->default_value("5"))
+      ("r,verify-contours", "Show the contours found in each input image", cxxopts::value<bool>()->default_value("false"))
       ("i,initial-piece-id", "Identify pieces starting with this number", cxxopts::value<uint>()->default_value("1"))            
       ("o,order", "Order of pieces in the input images", cxxopts::value<std::string>()->default_value("lrtb"))
       ("p,partition", "Piece-ordering partition factor for adjusting behavior of --order", cxxopts::value<float>()->default_value("1.0"))                
       ("b,corners-blocksize", "Block size to use when finding corners", cxxopts::value<uint>()->default_value("25"))            
       ("c,corners-quality", "Corner quality warning threshold", cxxopts::value<uint>()->default_value("300"))              
       ("a,adjust-corners","Show GUI corner adjuster for each piece where its corner quality exceeds the corners quality threshold", cxxopts::value<bool>()->default_value("false"))
-      ("gui-scale","Initial scale factor for images shown in GUI windows",  cxxopts::value<float>()->default_value("1.0"))
-      ("lscore-limit","Limit of lscore values auto accepted as matches", cxxopts::value<float>()->default_value("125.0"))            
-      ("sscore-limit","Limit of sscore values auto accepted as matches", cxxopts::value<float>()->default_value("2000.0"))                        
+      ("l,scale","Scale factor for images shown in GUI windows",  cxxopts::value<float>()->default_value("1.0"))
+      ("cscore-limit","Limit of cscore values auto accepted as matches", cxxopts::value<float>()->default_value("125.0"))            
+      ("escore-limit","Limit of escore values auto accepted as matches", cxxopts::value<float>()->default_value("4000.0"))                        
       ("save-all", "Save all images (originals, contours, b&w, color, corners, edges)", cxxopts::value<bool>()->default_value("false"))
       ("save-originals", "Save original images", cxxopts::value<bool>()->default_value("false"))                        
       ("save-contours", "Save contour images", cxxopts::value<bool>()->default_value("false"))            
@@ -99,7 +100,7 @@ int main(int argc, char * argv[])
       ("save-color", "Save color piece images", cxxopts::value<bool>()->default_value("false"))                                    
       ("save-corners", "Save piece images showing corner locations", cxxopts::value<bool>()->default_value("false"))                                                
       ("save-edges", "Save images for each piece edge", cxxopts::value<bool>()->default_value("false")) 
-      ("save-matches", "Save images for each pair of matched edges", cxxopts::value<bool>()->default_value("false"))             
+      ("save-matches", "Save images for each pair of matched edges (in auto solve mode only)", cxxopts::value<bool>()->default_value("false"))             
       ("d,demo","Solve a named demo puzzle.  See below for a list of demos.", cxxopts::value<std::string>()) 
 
       ("positional","Positional parameters", cxxopts::value<std::vector<std::string>>())
@@ -199,9 +200,10 @@ int main(int argc, char * argv[])
     user_params.setFindCornersBlockSize(result["corners-blocksize"].as<uint>());
     user_params.setMinCornersQuality(result["corners-quality"].as<uint>());  
     user_params.setAdjustingCorners(result["adjust-corners"].as<bool>());
-    user_params.setGuiScale(result["gui-scale"].as<float>());
-    user_params.setLScoreLimit(result["lscore-limit"].as<float>());
-    user_params.setSScoreLimit(result["sscore-limit"].as<float>());  
+    user_params.setGuiScale(result["scale"].as<float>());
+    user_params.setCscoreLimit(result["cscore-limit"].as<float>());
+    user_params.setEscoreLimit(result["escore-limit"].as<float>());  
+    user_params.setVerifyingContours(result["verify-contours"].as<bool>());
     user_params.setSaveAll(result["save-all"].as<bool>());
     user_params.setSavingOriginals(result["save-originals"].as<bool>());    
     user_params.setSavingContours(result["save-contours"].as<bool>());        

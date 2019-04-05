@@ -24,6 +24,7 @@
 #include "contours.h"
 #include "logger.h"
 #include "guided_match.h"
+#include "image_viewer.h"
 
 typedef std::vector<cv::Mat> imlist;
 
@@ -137,7 +138,7 @@ std::vector<piece> puzzle::extract_pieces() {
 
         contour_mgr.sort_contours();
         
-        if (user_params.isSavingContours()) {
+        if (user_params.isVerifyingContours() || user_params.isSavingContours()) {
             std::vector<std::vector<cv::Point> > contours_to_draw;
             cv::Mat cmat = cv::Mat::zeros(bw[i].size().height, bw[i].size().width, CV_8UC3);    
             double font_scale = sqrt(bw[i].size().height * bw[i].size().width) / 1000;
@@ -145,12 +146,23 @@ std::vector<piece> puzzle::extract_pieces() {
                 cv::Rect bounds = contour_mgr.contours[j].bounds;
                 contours_to_draw.push_back(contour_mgr.contours[j].points);
                 // Text indicating contour order within the image
-                cv::putText(cmat, std::to_string(j+1), cv::Point2f(bounds.x+bounds.width/2-(10.0*font_scale),bounds.y+bounds.height/2+(10.0*font_scale)),
+                cv::putText(cmat, std::to_string(j+piece_number), cv::Point2f(bounds.x+bounds.width/2-(10.0*font_scale),bounds.y+bounds.height/2+(10.0*font_scale)),
                         cv::FONT_HERSHEY_COMPLEX_SMALL, font_scale, cv::Scalar(0, 255, 255), 1, COMPAT_CV_LINE_AA);                
             }
 
             cv::drawContours(cmat, contours_to_draw, -1, cv::Scalar(255,255,255), 2, 16);
-            utils::write_debug_img(user_params, cmat, "contours", image_number);
+            
+            if (user_params.isVerifyingContours()) {
+                if (i == 0) {
+                    std::cout << "With focus on the contours image window:" << std::endl;
+                    std::cout << "    press 't' to toggle between the contours and original image" << std::endl;
+                    std::cout << "    press 'n' to advance to the next image" << std::endl;
+                }
+                show_images("contours-" + image_number, cmat, color_images[i]);
+            }
+            if (user_params.isSavingContours()) {
+                utils::write_debug_img(user_params, cmat, "contours", image_number);
+            }
         }
         
         // Uncomment to save a version of the original with the piece numbers overlayed
@@ -210,6 +222,10 @@ std::vector<piece> puzzle::extract_pieces() {
         }
     }
     
+    for (std::vector<piece>::iterator i= pieces.begin(); i != pieces.end(); i++) {
+        i->process();
+    }
+
     return pieces;
 }
 
@@ -421,14 +437,14 @@ bool match_check_function(void* data, int p1, int p2, int e1, int e2) {
 }
 
 bool puzzle::check_match(int p1, int p2, int e1, int e2) {
-    double lscore;
-    double sscore;
-    double score = pieces[p1].edges[e1].compare3(pieces[p2].edges[e2], lscore, sscore);
+    double cscore;
+    double escore;
+    double score = pieces[p1].edges[e1].compare3(pieces[p2].edges[e2], cscore, escore);
     if (user_params.isVerbose()) {
         std::cout << "check_match(" << (p1+user_params.getInitialPieceId()) << ", " << (p2+user_params.getInitialPieceId()) 
-                << ", " << e1 << ", " << e2 << ")=" << lscore << " / " << sscore << std::endl;
+                << ", " << e1 << ", " << e2 << ")=" << cscore << " / " << escore << std::endl;
     }
-    if (score == DBL_MAX || lscore > user_params.getLScoreLimit() || sscore > user_params.getSScoreLimit()) {
+    if (score == DBL_MAX || cscore > user_params.getCscoreLimit() || escore > user_params.getEscoreLimit()) {
         return false;
     }
     return true;
@@ -602,13 +618,13 @@ std::string puzzle::guide_match(int p1, int p2, int e1, int e2) {
         return "yes";  // "yes" results in the default automatic solution behavior
     }
     
-    double lscore;
-    double sscore;
-    double score = pieces[p1].edges[e1].compare3(pieces[p2].edges[e2], lscore, sscore);
+    double cscore;
+    double escore;
+    double score = pieces[p1].edges[e1].compare3(pieces[p2].edges[e2], cscore, escore);
     
     std::cout << "Does piece " << (p1 + user_params.getInitialPieceId()) 
             << " fit to " << (p2 + user_params.getInitialPieceId()) 
-            << " (scores: " << lscore << " / " << sscore << ")"
+            << " (scores: " << cscore << " / " << escore << ")"
             << " ? " << std::flush;
     
     std::string response = guided_match(pieces[p1], pieces[p2], e1, e2, user_params);
@@ -779,74 +795,11 @@ void puzzle::save_solution_image(){
     
 }
 
-#if OPENCV_VERSION_MAJOR == 2
-// Mimic cv::rotate(src,dest,rotation_code) which is available starting in OpenCV 3.x 
-void cv_rotate(const cv::Mat& image, cv::Mat& dest, int rotation_code)
-{
-  switch (rotation_code) {
-  case ROTATE_90_CLOCKWISE:
-    cv::flip(image.t(), dest, 1);
-    break;
-  case ROTATE_180:
-    cv::flip(image, dest, -1);
-    break;
-  case ROTATE_90_COUNTERCLOCKWISE:
-    cv::flip(image.t(), dest, 0);
-    break;
-  default:
-    dest = image.clone();
-    break;
-  }
-}
-#endif
-
-// Initial width, the window is resizable
-#define SOLUTION_WINDOW_WIDTH 768
 
 void puzzle::show_solution_image() {
     cv::Mat solution_image = cv::imread(get_solution_image_pathname());
-
-    float aspect = (float)solution_image.size().width / solution_image.size().height;
-    
-    int height = SOLUTION_WINDOW_WIDTH / aspect;
-    
-    std::string window_name = "solution";
-    cv::namedWindow(window_name, cv::WINDOW_NORMAL);
-    cv::resizeWindow(window_name, SOLUTION_WINDOW_WIDTH, height);
-
-    int rotation_code = 3; // 0 = 90, 1 = 180, 2 = 270, 3 = 0
-    cv::Mat rotated;
-    cv::imshow(window_name, solution_image);
-    
     std::cout << "With focus on the solution image window:" << std::endl;
-    std::cout << "    press the 'r' key one or more times to rotate the solution image by 90 degrees" << std::endl;
-    std::cout << "    press the 'q' to quit/exit" << std::endl;
-    
-    bool done = false;
-    do {
-        int key = cv::waitKey(0);    
-        switch (key) {
-            case -1:
-            case 'q':
-                done = true;
-                break;
-            case 'r':
-                rotation_code = (rotation_code + 1) % 4;
-                if (rotation_code == 3) {
-                    rotated = solution_image.clone();
-                } else {
-                    compat_cv_rotate(solution_image, rotated, rotation_code);
-                }
-                cv::imshow(window_name, rotated);
-                break;
-            default:
-                break;
-        }
-    } while (!done);
-    try {
-        cv::destroyWindow(window_name);
-    }
-    catch (cv::Exception x) {
-        // Ignore
-    }
+    std::cout << "    press 'r' one or more times to rotate the solution image by 90 degrees" << std::endl;
+    std::cout << "    press 'q' to quit/exit" << std::endl;
+    show_image("solution", solution_image);
 }

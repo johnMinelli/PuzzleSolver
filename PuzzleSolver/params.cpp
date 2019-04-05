@@ -209,20 +209,20 @@ void params::setAdjustingCorners(bool editingCorners) {
     this->editingCorners = editingCorners;
 }
 
-float params::getLScoreLimit() const {
-    return lScoreLimit;
+float params::getCscoreLimit() const {
+    return cscoreLimit;
 }
 
-void params::setLScoreLimit(float lScoreLimit) {
-    this->lScoreLimit = lScoreLimit;
+void params::setCscoreLimit(float cscoreLimit) {
+    this->cscoreLimit = cscoreLimit;
 }
 
-float params::getSScoreLimit() const {
-    return sScoreLimit;
+float params::getEscoreLimit() const {
+    return escoreLimit;
 }
 
-void params::setSScoreLimit(float sScoreLimit) {
-    this->sScoreLimit = sScoreLimit;
+void params::setEscoreLimit(float escoreLimit) {
+    this->escoreLimit = escoreLimit;
 }
 
 int params::getWorkOnPiece() const {
@@ -231,6 +231,14 @@ int params::getWorkOnPiece() const {
 
 void params::setWorkOnPiece(int workOnPiece) {
     this->workOnPiece = workOnPiece;
+}
+
+bool params::isVerifyingContours() const {
+    return verifyingContours;
+}
+
+void params::setVerifyingContours(bool verifyingContours) {
+    this->verifyingContours = verifyingContours;
 }
     
 inline const char * const bool_to_string(bool b)
@@ -257,8 +265,9 @@ std::string params::to_string() const {
     stream << "min corners quality .... " << this->getMinCornersQuality() << std::endl;
     stream << "adjust corners ......... " << bool_to_string(this->isAdjustingCorners()) << std::endl;          
     stream << "gui scale .............. " << this->getGuiScale() << std::endl;   
-    stream << "lscore limit ........... " << this->getLScoreLimit() << std::endl;   
-    stream << "sscore limit ........... " << this->getSScoreLimit() << std::endl;       
+    stream << "cscore limit ........... " << this->getCscoreLimit() << std::endl;   
+    stream << "escore limit ........... " << this->getEscoreLimit() << std::endl;       
+    stream << "verify contours ........ " << bool_to_string(this->isVerifyingContours()) << std::endl;
     stream << "save original images ... " << bool_to_string(this->isSavingOriginals()) << std::endl;
     stream << "save contour images .... " << bool_to_string(this->isSavingContours()) << std::endl;
     stream << "save b&w images ........ " << bool_to_string(this->isSavingBlackWhite()) << std::endl;    

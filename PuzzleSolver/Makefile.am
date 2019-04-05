@@ -8,5 +8,5 @@ OPENCV_LDDFLAGS = $(opencv_LIBS)
 endif
 AM_CXXFLAGS = -std=c++11 $(OPENCV_CXXFLAGS) $(OPENMP_CFLAGS)
 LDADD = $(OPENCV_LDDFLAGS) $(OPENMP_CFLAGS)
-PuzzleSolver_SOURCES = adjust_corners.cpp contours.cpp edge.cpp guided_match.cpp logger.cpp main.cpp params.cpp piece.cpp puzzle.cpp PuzzleDisjointSet.cpp utils.cpp
+PuzzleSolver_SOURCES = adjust_corners.cpp contours.cpp edge.cpp guided_match.cpp image_viewer.cpp logger.cpp main.cpp params.cpp piece.cpp puzzle.cpp PuzzleDisjointSet.cpp utils.cpp
 #gmtest_SOURCES = adjust_corners.cpp contours.cpp edge.cpp guided_match.cpp gmtest.cpp logger.cpp params.cpp piece.cpp utils.cpp

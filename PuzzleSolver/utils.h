@@ -131,6 +131,7 @@ public:
     static void write_debug_img(params& user_params, cv::Mat& img, std::string prefix, uint index1, uint index2);
 
     static void autocrop(cv::Mat& src, cv::Mat& dst);
+  
 
 };
 #endif /* defined(__PuzzleSolver__Utils__) */

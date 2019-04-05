@@ -64,18 +64,18 @@ double edge::compare2(edge that){
     return cost/total_length;
 }
 
-double edge::compare3(edge that, double& lscore, double& sscore) {
+double edge::compare3(edge that, double& cscore, double& escore) {
     //Return large number if an impossible situation is happening
     if(type == OUTER_EDGE || that.type == OUTER_EDGE || type == that.type) {
-        lscore = 0.0;
-        sscore = DBL_MAX;
+        cscore = 0.0;
+        escore = DBL_MAX;
         return DBL_MAX;
     }
     
 
     double corners_diff = this->corner_distance - that.corner_distance;
     corners_diff *= corners_diff;
-    lscore = corners_diff;
+    cscore = corners_diff;
     
     double cost = 0.0;
     for(std::vector<cv::Point2f>::iterator i = normalized_contour.begin(); i!=normalized_contour.end(); i++){
@@ -88,18 +88,18 @@ double edge::compare3(edge that, double& lscore, double& sscore) {
         cost+=min;//(min*min);
     }
     
-    sscore = cost;
-    return lscore + sscore;    
+    escore = cost;
+    return cscore + escore;    
 }
 
 //This comparison iterates over every point in "this" contour,
 //finds the closest point in "that" contour and sums those distances up.
 //It also adds in the squares of the difference in arc_lengths and corner-corner distances.
 double edge::compare3(edge that) {
-    double lscore;
-    double sscore;
+    double cscore;
+    double escore;
     
-    return compare3(that, lscore, sscore);
+    return compare3(that, cscore, escore);
 }
 
 void edge::classify(){

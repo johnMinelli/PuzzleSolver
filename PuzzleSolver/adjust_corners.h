@@ -1,5 +1,5 @@
-#ifndef EDIT_CORNERS_H
-#define EDIT_CORNERS_H
+#ifndef ADJUST_CORNERS_H
+#define ADJUST_CORNERS_H
 
 /** @brief Display a GUI which allows the corners of a piece to be manually adjusted.
 
@@ -17,5 +17,5 @@ The '+' and '-' keys can be used to increase/decrease the display scale factor.
 */
 bool adjust_corners(std::string& window_name, cv::Mat& image, float scale_factor, std::vector<cv::Point2f>& original_corners, std::vector<cv::Point2f>& edited_corners, bool verbose);
 
-#endif /* EDIT_CORNERS_H */
+#endif /* ADJUST_CORNERS_H */
 

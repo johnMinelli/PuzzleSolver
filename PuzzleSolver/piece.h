@@ -30,7 +30,7 @@ private:
     std::string id;
     std::vector<cv::Point2f> corners;
     pieceType type;
-    void process();
+
     void find_corners();
     void extract_edges();
     void classify();
@@ -42,9 +42,9 @@ private:
 public:
     cv::Mat full_color;
     cv::Mat bw;
-
-    piece(uint piece_number, std::string id, cv::Mat color, cv::Mat bw, params& user_params);
     edge edges[4];
+    piece(uint piece_number, std::string id, cv::Mat color, cv::Mat bw, params& user_params);
+    void process();    
     uint get_number();
     std::string get_id();
     pieceType get_type();

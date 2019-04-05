@@ -41,7 +41,7 @@ public:
     double compare(edge);
     double compare2(edge);
     double compare3(edge);
-    double compare3(edge, double& lscore, double& sscore);
+    double compare3(edge, double& cscore, double& escore);
     std::string edge_type_to_s();
     
 };
