@@ -20,11 +20,7 @@ be found, then an image of the solved puzzle is shown in a GUI window.
 - [Solve a built-in demo puzzle](#solving-a-demo-puzzle)
 - [Solve your own puzzle](#solving-your-own-puzzle)
 - [Command line options](#command-line-options-intro)
-- [Solution Modes](#auto-solution-mode)
-- [GUI Windows](#gui-windows)
-  - [Contour verification](#contour-verification)
-  - [Corner adjustment](#corner-adjustment)
-  - [Guided match](#guided-match)
+- [Solution Modes](#solution-modes)
 - [How It Works](#how-puzzlesolver-works)  
 
 
@@ -107,11 +103,11 @@ PuzzleSolver can be used on all pieces of a puzzle, or on just the loose pieces 
   good for solving puzzles with a large number of pieces, or for solving partially completed puzzles.  For partially completed
   puzzles, PuzzleSolver will help you fit the loose pieces together via `--guided` solution mode.
 
-Example input image:
+**Example input image:**
 
 ![input image example](DocImages/pieces.png)
 
-### Command line options intro
+## Command line options intro
 
 More detail on command line options is given in the [How PuzzleSolver Works](#how-puzzlesolver-works) section, below.
 
@@ -128,59 +124,54 @@ size value.  If too many contours are shown, then increase the estimated piece s
 different compared to the input images, then read up on the `--order` option, below, or re-scan the pieces after adjusting 
 their layout on the scanner bed.
 
+| Contour verification window |
+| :--- |
+| ![contour verification view](DocImages/contours.png) <br> With focus on this window, press the 't' key to toggle between viewing the contours <br>and the original input image. Press the 'n' key to advance to the contours of the next input image.  |
+
+**Corner quality warnings**
+
 If you get warnings about poor corners quality, try lowering the estimated piece size.  If that doesn't help, then try using 
-a lower `--threshold` value.  For low DPI scans (200dpi or less) you might also need to reduce the value of `--corners-blocksize`. 
+a lower `--threshold` value.  The `--corners-blocksize` value might also need to be reduced, especially for smaller pieces or if scanned with lower DPIs. 
 For persistent corner quality issues, use `--adjust-corners` to trigger a popup GUI window for each piece with poorly located corners. 
 This window allows the corner locations to be adjusted -- click and drag the red circles until they are each positioned 
 over a corner, then press the 'n' key to dismiss the window and advance to the next problematic piece, if any.  If no edits 
-are necessary, press the 'n' key.  Manual adjustments are persisted in data files in the output directory.
-
-When you are ready for PuzzleSolver to solve the puzzle, add the `--solve` or `--giuded` option.  In solution mode, PuzzleSolver 
-computes a score for every possible edge-edge matchup.  The computed scores are used to determine how to fit peices together 
-when finding the overall solution.  
-
-#### Auto Solution Mode
-In automatic mode (`--solve`), PuzzleSolver will attempt to solve the entire puzzle without any further input.  This works for the demos, and is likely to work for entire puzzles with low piece counts and relatively large phyiscal piece sizes.  Automatic solution mode, when successful, will show you an image of the completed puzzle.  The solution image file is also saved to the output directory as `solution.png`, and the console output is appended to `solution.log`.
-
-#### Guided Solution Mode
-In guided solution mode (`--guided`) you will be prompted via a popup GUI window to match pieces together.  Find the two pieces shown and check to see if they are a proper match -- if so, press the 'y' key on your keyboard, otherwise press the 'n' key.  For those pieces that fit to form a proper match, leave them connected.   With each 'y' or 'n' keypress, the GUI window will disappar and re-appear to prompt you to check another proposed match. As you progress, notice that the piece shown on the left side of this window will always part of the growing set of matched pieces, and that the peice shown on the right is from the collection of loose, unmatched pieces.  The 'y' and 'n' answers are rememberd in a data file in the output directory.  PuzzleSolver pick up from where it left of as long as it is invoked with the same command line parameters.
-
-# GUI Windows
-
-## Contour Verification
-
-When the `--verify-contours` option is used, PuzzleSolver pops up a window showing the numbered piece contours found in the input images. 
-With focus on this window, press the 't' key to toggle between viewing the contours and the original input image.  Press the 'n' key to advance
-to the contours of the next input image.
-
-
-![contour verification view](DocImages/contours.png)
-
-## Corner Adjustment
-
-When the `--adjust-corners` option is given then the corner adjustment GUI window is popped up for each piece with inadequate corner locations.
-Using your mouse, drag the red circles so that the corner appears within the circle.  In the image below, the circle shown in the middle
-right of the image needs to be dragged down to the corner of the piece below it.
+are necessary, press the 'n' key.  Manual adjustments are persisted in data files in the output directory so that they don't 
+have to be re-adjusted when re-running PuzzleSolver.
 
 The rendering scale of this window can be adjusted using the -/+ keys, or you can use the `--scale` option to set it for all popup windows.
-Toggle between the color and black and white version of the piece with the 'c' key.  Press the 'n' key when you are done adjusting the corners, 
-or if no adjustment is required.
+Toggle between the color and black and white version of the piece with the 'c' key. 
 
-If the corner locations are modified, then the updated locations are persisted to a data file in the output directory so that you won't have to re-adjust
-them when re-running PuzzleSolver.  
-
-| Before adjustment | After adjustment |
-| :---: | :---: |
+| Corners before adjustment | Corners after adjustment |
+| :--- | :--- |
 | ![before adjustment](DocImages/before-corner-adjustment.png) | ![after adjustment](DocImages/after-corner-adjustment.png) |
 
-## Guided Match
+## Solution Modes
 
-In guided solution mode you will be prompted via a popup GUI window to accept or reject suggested piece matches.  The idea is
-to actually try fitting the pieces together in the orientation shown to determine if they match or not.  Accept the match by 
-pressing the 'y' key, and reject the match via the 'n' key.  If the pieces fit, leave them attached. Over time the size of the 
-properly fitted, matched group of pieces will grow, and fewer unmatched pieces will be left.
+When you are ready for PuzzleSolver to solve the puzzle, rerun with the same command line options as before, but add either the 
+`--solve` or `--guided` option.  PuzzleSolver loads and processes the input images as it did before, but then advances into 
+solution mode by first computing a score for every possible edge-edge matchup.  The computed scores are used to determine 
+how to fit peices together when finding the overall solution.  
 
-PuzzleSolver attempts to find the best possible match of a new piece to the group of matched pieces you are currently 
+
+
+### Auto Solution Mode
+In automatic mode (`--solve`), PuzzleSolver will attempt to solve the entire puzzle without any further input.  This 
+works for the demos, and is likely to work for entire puzzles with low piece counts and relatively large phyiscal piece 
+sizes.  Automatic solution mode, when successful, will show you an image of the completed puzzle.  The solution image 
+file is also saved to the output directory as `solution.png`, and the console output is appended to `solution.log`.
+
+### Guided Solution Mode
+In guided solution mode (`--guided`) you will be prompted via a popup GUI window to match pieces together.  Find the two 
+pieces shown and check to see if they are a proper match -- if so, press the 'y' key on your keyboard, otherwise press 
+the 'n' key.  For those pieces that fit to form a proper match, leave them connected.   With each 'y' or 'n' keypress, 
+the GUI window will disappear and re-appear to prompt you to check another proposed match. As you progress, notice that 
+the piece shown on the left side of this window will always be part of the growing set of matched pieces, and that the piece 
+shown on the right is from the collection of loose, unmatched pieces.  The 'y' and 'n' answers are remembered in a data 
+file in the output directory.  PuzzleSolver picks up from where it left off as long as it is invoked with the same command 
+line parameters.
+
+
+In guided mode, PuzzleSolver attempts to find the best possible match of a new piece to the group of matched pieces you are currently 
 working on.  It does this by finding the lowest edge-edge match score which includes an exterior edge in the group. 
 Notice that the piece depicted on the left side of this window always belongs to the matched group, and the one on the 
 right is from the set of unmatched pieces. The process is not perfect, especially for puzzles with small piece sizes, 
@@ -188,10 +179,28 @@ and often the suggested matches aren't the correct fit.  When a piece does fit, 
 
 The rendering scale of this window can be adjusted using the -/+ keys, or you can use the `--scale` option to set it for all popup windows.
 
+| Guided match prompt window |
+| :--- |
+| ![guided match prompt](DocImages/guided-match-window.png) |
 
-![guided match prompt](DocImages/guided-match-window.png)
+#### Starting a new matched group
 
-TODO: work on a new group, set boundary edges.
+Suppose you are using PuzzleSolver to help complete a partially completed puzzle that has two separate unfinished sections. 
+You've scanned the loose pieces and in guided mode have performed enough successful matches that one of the unfinished 
+sections is now solved, but PuzzleSolver keeps prompting you to match loose pieces to the edges of the already completed section.
+PuzzleSolver needs to be told to work on the other section instead.  To do this, press 'w' key while the guided match 
+window is in focus.  The window will disappear and an input prompt on the console will ask for a piece number to work on.
+Enter the piece number of a loose piece and the guided match window will reappear prompting you with a match for that piece. 
+From this point forward you will be prompted to match against the new group of pieces.
+
+Alternatively, you can restart PuzzleSolver with the `--work-on` option and provide the piece number.
+
+It is possible to switch back to working on a previous group by entering the piece number of any piece in the group you 
+want to work on, either via the 'w' key or `--work-on` option.
+
+#### Setting boundary edges
+
+TODO
 
 # How PuzzleSolver works
 This section introduces the internals of PuzzleSolver and its command line options. 
@@ -210,7 +219,7 @@ This section introduces the internals of PuzzleSolver and its command line optio
  - If you have not directed PuzzleSolver to proceed to the solution phase via `--solve`, `--guided`, or `--demo`, processing stop here and PuzzleSolver exits.
  - PuzzleSolver computes scores for each possible edge-edge combination.  Lower scores indicate a better match.  Impossible matches such as a TAB edge matched to another TAB edge are given the highest possible score.  Otherwise for every point in "this" contour the distances to the closest point in "that" contour are summed up and then added to the square of the difference in the distances between the two edge endpoints.
  - The edge-edge combinations and thier scores are sorted into ascending order by the score values.
- - In automatic mode, a solution is attempted by iterating down the sorted list, matching the two edges of each entry and rejecting the match if it results in an impossible physical arrangement of pieces such as overlaps, etc.  If the solution were to be visualized over time, it would appear as pieces randomly coalescing together until all pieces have been matched into a single group of pieces.
+ - In automatic mode, a solution is attempted by iterating down the sorted list, matching the two edges of each entry and rejecting the match if it results in an impossible physical arrangement of pieces such as overlaps, etc.  If the solution were to be visualized over time, it would appear as if the pieces randomly coalesce until all pieces have been matched into a single group of pieces.
  - Guided solution mode is similar except that the the human operator participates in accepting and rejecting possible matches, and the number of matches sets is intentionally kept to a minimum for the sake of the user's sanity.
 
 
