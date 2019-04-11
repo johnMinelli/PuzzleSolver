@@ -170,7 +170,7 @@ If the corner locations are modified, then the updated locations are persisted t
 them when re-running PuzzleSolver.  
 
 | Before adjustment | After adjustment |
-| --- | --- |
+| :---: | :---: |
 | ![before adjustment](DocImages/before-corner-adjustment.png) | ![after adjustment](DocImages/after-corner-adjustment.png) |
 
 ## Guided Match
