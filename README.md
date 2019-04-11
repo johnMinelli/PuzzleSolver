@@ -164,17 +164,13 @@ file is also saved to the output directory as `solution.png`, and the console ou
 In guided solution mode (`--guided`) you will be prompted via a popup GUI window to match pieces together.  Find the two 
 pieces shown and check to see if they are a proper match -- if so, press the 'y' key on your keyboard, otherwise press 
 the 'n' key.  For those pieces that fit to form a proper match, leave them connected.   With each 'y' or 'n' keypress, 
-the GUI window will disappear and re-appear to prompt you to check another proposed match. As you progress, notice that 
-the piece shown on the left side of this window will always be part of the growing set of matched pieces, and that the piece 
-shown on the right is from the collection of loose, unmatched pieces.  The 'y' and 'n' answers are remembered in a data 
-file in the output directory.  PuzzleSolver picks up from where it left off as long as it is invoked with the same command 
-line parameters.
-
+the GUI window will disappear and re-appear to prompt you to check another proposed match. Notice that the piece depicted 
+on the left side of this window always belongs to the matched group, and the one on the  right is from the set of unmatched 
+pieces. The 'y' and 'n' answers are remembered in a data file in the output directory.  PuzzleSolver picks up from where it 
+left off as long as it is invoked with the same command line parameters.
 
 In guided mode, PuzzleSolver attempts to find the best possible match of a new piece to the group of matched pieces you are currently 
-working on.  It does this by finding the lowest edge-edge match score which includes an exterior edge in the group. 
-Notice that the piece depicted on the left side of this window always belongs to the matched group, and the one on the 
-right is from the set of unmatched pieces. The process is not perfect, especially for puzzles with small piece sizes, 
+working on.  It does this by finding the lowest edge-edge match score which includes an exterior edge in the group. The process is not perfect, especially for puzzles with small piece sizes, 
 and often the suggested matches aren't the correct fit.  When a piece does fit, leave it attched and press the 'y' key. 
 
 The rendering scale of this window can be adjusted using the -/+ keys, or you can use the `--scale` option to set it for all popup windows.
