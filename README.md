@@ -132,6 +132,12 @@ the pieces after adjusting their layout on the scanner bed.
 
 **Corner quality warnings**
 
+| Contour verification window |
+| :--- |
+| ![contour verification view](DocImages/contours.png) <br> With focus on this window, press the 't' key to toggle between viewing the contours <br>and the original input image. Press the 'n' key to advance to the contours of the next input image.  |
+
+**Corner quality warnings**
+
 If you get warnings about poor corners quality, try lowering the estimated piece size.  If that doesn't help, then try using 
 a lower `--threshold` value.  The `--corners-blocksize` value might also need to be reduced, especially for smaller pieces or if scanned with lower DPIs. 
 For persistent corner quality issues, use `--adjust-corners` to trigger a popup GUI window for each piece with poorly located corners. 
@@ -228,7 +234,6 @@ known to match pieces in the original finished section of the puzzle.   These su
 To prevent PuzzleSolver from suggesting a match to the right edge of the left piece currently shown in the guided match 
 window, press the 'b' key.  The decision to mark an edge as a "boundary edge" is remembered (saved) in a data file in
 the output directory. 
-
 
 # How PuzzleSolver works
 This section introduces the internals of PuzzleSolver and its command line options. 
