@@ -30,7 +30,7 @@ be found, then an image of the solved puzzle is shown in a GUI window.
 OpenCV is required to run PuzzleSolver. This version compiles with OpenCV version 2, 3, or 4. Here is how I have done it on 2 different computers...
 
 ## OSX 
-Tested on High Sierra with OpenCV 4.0.1
+Tested on High Sierra (10.3.x) and Mojave (10.4.x) with OpenCV 4.0.1
 ```
 ### Install Homebrew if you haven't already. Visit https://brew.sh and install it
 
@@ -39,7 +39,7 @@ brew install opencv libomp
 ```
 
 ### Running on OSX
-For some reason I have to set DYLD_FALLBACK_LIBRARY_PATH or PuzzleSolver fails to execute due to unresolved library issues.
+For some reason on High Sierra I have to set DYLD_FALLBACK_LIBRARY_PATH or PuzzleSolver fails to execute due to unresolved library issues.  This issue went away after I upgraded to Mojave.
 ```
 DYLD_FALLBACK_LIBRARY_PATH=/usr/local/opt/lib ./PuzzleSolver ...
 ```
@@ -54,11 +54,19 @@ sudo apt-get install libopencv-dev
 
 ### Manual install
 
-https://www.pyimagesearch.com/2018/05/28/ubuntu-18-04-how-to-install-opencv/
+Installed OpenCV 3.4.4 following the instructions here: https://www.pyimagesearch.com/2018/05/28/ubuntu-18-04-how-to-install-opencv/
+
+
+### On ChromeOS, Linux (Beta)
+
+Installs OpenCV 2.4 as of April 2019
+```
+sudo apt-get install libopencv-dev
+```
 
 # Compiling PuzzleSolver
 
-On Linux or Mac run this from the PuzzleSolver source code directory:
+On Linux or Mac run this from the PuzzleSolver/Src directory:
 ```
 ./build.sh
 ```
