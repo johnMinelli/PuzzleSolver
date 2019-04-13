@@ -27,7 +27,7 @@ be found, then an image of the solved puzzle is shown in a GUI window.
 
 # Installing OpenCV
 
-OpenCV is required to run PuzzleSolver. This version compiles with OpenCV version 2, 3, or 4. Here is how I have done it on 2 different computers...
+OpenCV is required to run PuzzleSolver. This version compiles with OpenCV version 2, 3, or 4. Here is how I have done it on 3 different computers...
 
 ## OSX 
 Tested on High Sierra (10.3.x) and Mojave (10.4.x) with OpenCV 4.0.1
@@ -138,11 +138,6 @@ the pieces after adjusting their layout on the scanner bed.
 | :--- |
 | ![contour verification view](DocImages/contours.png) <br> With focus on this window, press the 't' key to toggle between viewing the contours <br>and the original input image. Press the 'n' key to advance to the contours of the next input image.  |
 
-**Corner quality warnings**
-
-| Contour verification window |
-| :--- |
-| ![contour verification view](DocImages/contours.png) <br> With focus on this window, press the 't' key to toggle between viewing the contours <br>and the original input image. Press the 'n' key to advance to the contours of the next input image.  |
 
 **Corner quality warnings**
 
