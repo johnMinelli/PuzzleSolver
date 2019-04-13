@@ -379,7 +379,7 @@ void puzzle::guided_solve(PuzzleDisjointSet& p) {
                 }
                 else if (response == GM_COMMAND_WORK_ON_SET) {
                     
-                    std::cout << "Current collector sets are: ";
+                    std::cout << "Current matched groups IDs are: ";
                     for (uint j = 0; j < p.get_collection_sets().size(); j++) {
                         if (j > 0) {
                             std::cout << ", ";
@@ -412,7 +412,7 @@ void puzzle::guided_solve(PuzzleDisjointSet& p) {
                             work_on = p.find(work_on_id);
                             std::cout << "Working on " << (work_on + user_params.getInitialPieceId());
                             if (work_on != work_on_id) {
-                                std::cout << " (collector set for " << piece_number << ")";
+                                std::cout << " (matched group for " << piece_number << ")";
                             }
                             std::cout << std::endl;
                             read_success = true;
