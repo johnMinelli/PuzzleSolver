@@ -43,7 +43,8 @@ void PuzzleDisjointSet::init_join(PuzzleDisjointSet::join_context& c, int a, int
     c.how_a = how_a;
     c.how_b = how_b;
     c.rep_a = find(a);
-    c.rep_b = find(b);    
+    c.rep_b = find(b);
+
     c.joinable = c.rep_a != c.rep_b;
 }
 

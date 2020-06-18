@@ -297,6 +297,18 @@ public:
                     done = true;
                     command = GM_COMMAND_WORK_ON_SET;
                     break;
+                case '0':
+                    done = true;
+                    command = GM_COMMAND_RESET;
+                    break;
+		        case 'u':
+                    done = true;
+                    command = GM_COMMAND_SUGGEST_WORK_PIECE;
+                    break;
+		        case 'i':
+                    done = true;
+                    command = GM_COMMAND_SUGGEST_WORK_SET;
+                    break;
                 case 'b':
                     done = true;
                     command = GM_COMMAND_MARK_BOUNDARY;
@@ -342,14 +354,16 @@ public:
                             << "y     yes, this is a valid match" << std::endl
                             << "c     toggle between color and black and white" << std::endl
                             << "e     toggle between showing the pieces and the matched edge outlines" << std::endl
-                            << "p     same as pressing key 'e'" << std::endl                            
+                            << "p     same as pressing key 'e'" << std::endl
                             << "-/=   decrease/increase the rendering scale of the pieces" << std::endl
                             << "x/X   adjust the x-offset between the matched pieces" << std::endl
-                            << "z/Z   adjust the y-offset between the matched pieces" << std::endl                            
+                            << "z/Z   adjust the y-offset between the matched pieces" << std::endl
                             << "s     show the pieces in the current collection set" << std::endl
-                            << "r     show the piece rotations of the current collection set" << std::endl                            
-                            << "w     work on a different collection set" << std::endl                                                        
-                            << "b     mark the right edge of the left-hand piece as a boundary" << std::endl
+                            << "r     show the piece rotations of the current collection set" << std::endl
+                            << "w     work on a different collection set" << std::endl
+			                << "u     suggest next work for the current piece" << std::endl
+			                << "i     suggest next work for the current set" << std::endl
+			                << "0     reset params and get back to the top of the vector" << std::endl
                             ;
                     break;
                 default:

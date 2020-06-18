@@ -297,28 +297,35 @@ void puzzle::guided_solve(PuzzleDisjointSet& p) {
     int output_id=0;
     
     bool done = false;
-    int work_on = -1;
-    
+    int work_on_set = -1;
+    int work_on_piece = -1;
+    int suggest = -1;
+    int loop=2;
+
     if (user_params.getWorkOnPiece() != -1) {
-        work_on = user_params.getWorkOnPiece() - user_params.getInitialPieceId();
+        work_on_set = user_params.getWorkOnPiece() - user_params.getInitialPieceId();
         
-        if (work_on < 0 || work_on >= pieces.size()) {
+        if (work_on_set < 0 || work_on_set >= pieces.size()) {
             logger::stream() << "Error, 'work on' piece number " << user_params.getWorkOnPiece() << " is out of range.  Expected a value between " 
                     << user_params.getInitialPieceId() << " and " << (pieces.size() + user_params.getInitialPieceId() - 1) << std::endl;
             logger::flush();
             exit(1);
         }
     }
-    
-    
+
     while (!p.in_one_set()) {
         std::vector<match_score>::iterator i= matches.begin();
+        if(loop==1) {
+            std::cout << "Suggestion's match not found"<< std::endl;
+            work_on_piece = -1;
+            suggest = -1;
+        }else if(loop<2) loop++;
         while(!p.in_one_set() && i!=matches.end() ) {
             int p1 = i->edge1/4;
             int e1 = i->edge1%4;
             int p2 = i->edge2/4;
             int e2 = i->edge2%4;
-            
+
             PuzzleDisjointSet::join_context c;
             p.init_join(c, p1, p2, e1, e2);
             if (!c.joinable || is_boundary_edge(p1, e1) || is_boundary_edge(p2, e2)) {
@@ -326,12 +333,13 @@ void puzzle::guided_solve(PuzzleDisjointSet& p) {
                 output_id += 1;
                 continue;
             }
-            
-            if (work_on != -1) {
-                if (work_on == c.rep_a) {
-                    // no-op
+
+            if (work_on_set != -1) {
+                //std::cout << "(0) " << "S:"<<suggest<<" R:" << p1<< " L:" << p2<< std::endl;
+                if (work_on_set == c.rep_a) {
+                    //no op
                 }
-                else if (work_on == c.rep_b) {
+                else if (work_on_set == c.rep_b) {
                     p.init_join(c, p2, p1, e2, e1);
                 }
                 else {
@@ -339,7 +347,14 @@ void puzzle::guided_solve(PuzzleDisjointSet& p) {
                     output_id += 1;
                     continue;
                 }
+                if(work_on_piece != -1 && work_on_piece != c.a || suggest != -1 && suggest != c.b ){
+                    i++;
+                    output_id += 1;
+                    continue;
+                }
+                //std::cout << "(1) " << "S:"<<suggest<<" R:" << p1<< " L:" << p2<< std::endl;
             }
+
             // Attempt to join if nothing has been joined yet (collection_set_count == 0), or if 
             // one of the two rep sets is a collection set and the other is unmatched.
             else if (p.collection_set_count() == 0 || (p.is_collection_set(c.rep_a) && p.is_unmatched_set(p2))) {
@@ -350,11 +365,12 @@ void puzzle::guided_solve(PuzzleDisjointSet& p) {
                 p.init_join(c, p2, p1, e2, e1);
             } 
             else {
+                //std::cout << "(2) " << "S:"<<suggest<<" R:" << p1<< " L:" << p2<< std::endl;
                 i++;
                 output_id += 1;                
                 continue;
             }
-            
+            //std::cout << "(2) " << "S:"<<suggest<<" R:" << p1<< " L:" << p2<< std::endl;
             p.compute_join(c);
 
             if (c.joinable) {
@@ -365,19 +381,19 @@ void puzzle::guided_solve(PuzzleDisjointSet& p) {
                 }
                 else if (response == GM_COMMAND_SHOW_SET) {
                     PuzzleDisjointSet::forest f = p.get(c.rep_a);
-                    std::cout << set_to_string(f.locations, user_params.getInitialPieceId()) << std::endl;
+                    std::cout << set_to_string(f.locations, user_params.getInitialPieceId(),c.a) << std::endl;
                     continue;
                 }
                 else if (response == GM_COMMAND_SHOW_ROTATION) {
                     PuzzleDisjointSet::forest f = p.get(c.rep_a);
-                    std::cout << set_to_string(f.rotations, 0) << std::endl;
+                    std::cout << set_to_string(f.rotations, 0,-1) << std::endl;
                     continue;
                 }   
                 else if (response == GM_COMMAND_MARK_BOUNDARY) {
                     set_boundary_edge(c.a, c.how_a);
                     continue;
                 }
-                else if (response == GM_COMMAND_WORK_ON_SET) {
+                else if (response == GM_COMMAND_WORK_ON_SET || response == GM_COMMAND_SUGGEST_WORK_PIECE || response == GM_COMMAND_SUGGEST_WORK_SET) {
                     
                     std::cout << "Current matched groups IDs are: ";
                     for (uint j = 0; j < p.get_collection_sets().size(); j++) {
@@ -409,18 +425,44 @@ void puzzle::guided_solve(PuzzleDisjointSet& p) {
                                     << user_params.getInitialPieceId() << " and " << (pieces.size() + user_params.getInitialPieceId() - 1) << std::endl;
                         }
                         else {
-                            work_on = p.find(work_on_id);
-                            std::cout << "Working on " << (work_on + user_params.getInitialPieceId());
-                            if (work_on != work_on_id) {
-                                std::cout << " (matched group for " << piece_number << ")";
+                            if(response == GM_COMMAND_WORK_ON_SET) {
+                                work_on_set = p.find(work_on_id);
+                                std::cout << "Working on " << (work_on_set + user_params.getInitialPieceId());
+                                if (work_on_set != work_on_id) {
+                                    std::cout << " (matched group for " << piece_number << ")";
+                                }
+                                std::cout << std::endl;
+                                read_success = true;
+                            } else if (response == GM_COMMAND_SUGGEST_WORK_PIECE) {
+                                if (c.rep_a == p.find(work_on_id)) {
+                                    std::cout << "Piece already attached to the current set";
+                                    continue;
+                                }
+                                work_on_set = c.rep_a;
+                                work_on_piece = c.a;
+                                suggest = work_on_id;
+                                loop=0;
+                                break;
+                            } else if (response == GM_COMMAND_SUGGEST_WORK_SET) {
+                                if (c.rep_a == p.find(work_on_id)) {
+                                    std::cout << "Piece already in the set";
+                                    continue;
+                                }
+                                work_on_set = c.rep_a;
+                                suggest = work_on_id;
+                                loop=0;
+                                break;
                             }
-                            std::cout << std::endl;
-                            read_success = true;
                         }
                     } while (!read_success);
                     continue;
-                }
-                else if (response == GM_COMMAND_X_CLOSE) {
+                } else if (response == GM_COMMAND_RESET) {
+                    work_on_set = -1;
+                    work_on_piece = -1;
+                    suggest = -1;
+                    loop=2;
+                    break;
+                } else if (response == GM_COMMAND_X_CLOSE) {
                     // Ignore
                     continue;
                 }
@@ -453,10 +495,10 @@ bool puzzle::check_match(int p1, int p2, int e1, int e2) {
 //Solves the puzzle
 void puzzle::solve(){
     
-    load_guided_matches();
     load_boundary_edges();
     
     PuzzleDisjointSet p(user_params, pieces.size(), match_check_function, this);
+    load_guided_matches(p);
     // PuzzleDisjointSet p(user_params, pieces.size(), NULL, NULL);
     
     if (!user_params.isGuidedSolution()) {
@@ -553,31 +595,68 @@ std::string get_guided_matches_filename(params& user_params) {
     return user_params.getOutputDir() + "guided-matches.dat";
 }
 
-void puzzle::load_guided_matches() {
+void puzzle::load_guided_matches(PuzzleDisjointSet& p) {
     std::string filename = get_guided_matches_filename(user_params);
-    std::ifstream istream;
-    istream.open(filename, std::ifstream::in);
-    if (istream.fail()) {
-        return;
-    }
 
     std::string dateField;
     std::string isMatchField;
     std::string piecePairId;
-    
-    while (true) {
+    bool one_more = true;
+    int total=0;
 
-        istream >> dateField;
-        istream >> isMatchField;
-        istream >> piecePairId;
-        if (istream.eof()) {
-            break;
+    while (one_more) {
+        std::ifstream istream;
+        istream.open(filename, std::ifstream::in);
+        if (istream.fail()) {
+            return;
         }
-        
-        guided_matches[piecePairId] = isMatchField;
+
+        one_more = false;
+        while (true) {
+
+            istream >> dateField;
+            istream >> isMatchField;
+            istream >> piecePairId;
+            if (istream.eof()) {
+                break;
+            }
+
+            std::map<std::string,std::string>::iterator it = guided_matches.find(piecePairId);
+            if (it == guided_matches.end()) {
+                if (isMatchField == GM_COMMAND_YES) {
+                    PuzzleDisjointSet::join_context c;
+
+                    std::vector <std::string> results;
+                    std::string delim = "-";
+                    size_t prev = 0, pos = 0;
+                    do {
+                        pos = piecePairId.find(delim, prev);
+                        if (pos == std::string::npos) pos = piecePairId.length();
+                        std::string token = piecePairId.substr(prev, pos - prev);
+                        if (!token.empty()) results.push_back(token);
+                        prev = pos + delim.length();
+                    } while (pos < piecePairId.length() && prev < piecePairId.length());
+
+                    p.init_join(c, std::stoi(results[0]) - user_params.getInitialPieceId(), std::stoi(results[2]) - user_params.getInitialPieceId(), std::stoi(results[1]) - 1,
+                                std::stoi(results[3]) - 1);
+                    p.compute_join(c);
+
+                    if (c.joinable) {
+                        guided_matches[piecePairId] = isMatchField;
+                        p.complete_join(c);
+                        one_more = true;
+                        total++;
+                    }
+                }
+            }
+        }
+        istream.close();
+
     }
-    
-    istream.close();
+    std::cout<<"Recovered ";
+    std::cout<<total;
+    std::cout<<" pieces"<<std::endl;
+
 }
 
 // Returns a string identifying the piece-edge paring
@@ -651,7 +730,7 @@ std::string puzzle::guide_match(int p1, int p2, int e1, int e2) {
     return response;
 }
 
-std::string puzzle::set_to_string(cv::Mat_<int> set, int offset) {
+std::string puzzle::set_to_string(cv::Mat_<int> set, int offset, int current) {
     std::stringstream stream;
     
     int width = 2;
@@ -668,7 +747,13 @@ std::string puzzle::set_to_string(cv::Mat_<int> set, int offset) {
         for(int col = 0; col < set.cols; ++col) {
             int value = *p++;
             if (value >= 0) {
-                stream << std::setw(width) << (value + offset);
+                if(value == current){
+                    stream << "\033[1;31m";
+                    stream << std::setw(width) << (value + offset);
+                    stream << "\033[0m";
+                }else{
+                    stream << std::setw(width) << (value + offset);
+                }
             }
             else {
                 stream << std::setw(width) << "";
@@ -687,11 +772,11 @@ std::string puzzle::set_to_string(cv::Mat_<int> set, int offset) {
 void puzzle::save_solution_text() {
     if(!solved) solve();
     
-    std::string solution_text = set_to_string(solution, user_params.getInitialPieceId());
+    std::string solution_text = set_to_string(solution, user_params.getInitialPieceId(),-1);
     logger::stream() << solution_text << std::endl;
     logger::flush();
     
-    logger::stream() << "\nrotations:\n" << set_to_string(solution_rotations, 0) << std::endl;
+    logger::stream() << "\nrotations:\n" << set_to_string(solution_rotations, 0,-1) << std::endl;
       
 }
 

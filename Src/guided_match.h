@@ -11,6 +11,9 @@
 #define GM_COMMAND_SHOW_ROTATION "show_rotation"
 #define GM_COMMAND_WORK_ON_SET "work_on_set"
 #define GM_COMMAND_MARK_BOUNDARY "mark_boundary"
+#define GM_COMMAND_RESET "mark_boundary"
+#define GM_COMMAND_SUGGEST_WORK_SET "suggest_next_set"
+#define GM_COMMAND_SUGGEST_WORK_PIECE "suggest_next_piece"
 
 /** @brief Display the guided match GUI for the given pieces/edges and waits for user input from the keyboard.
  * 
